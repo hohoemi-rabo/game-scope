@@ -39,10 +39,10 @@ export default function Header() {
               検索
             </Link>
             <Link
-              href="/releases"
+              href="/news"
               className="text-text-secondary hover:text-text-primary transition-colors"
             >
-              発売予定
+              ニュース
             </Link>
           </nav>
         </div>

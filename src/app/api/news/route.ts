@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { fetchReleases } from '@/lib/api/rss'
+import { fetchNews } from '@/lib/api/rss'
 
 /**
- * 発売予定情報取得 API
- * RSSフィードからデータを取得して返す
+ * ゲームニュース取得 API
+ * RSSフィードから全ニュースを取得して返す
  *
  * キャッシング戦略:
  * - public: CDNでキャッシュ可能
@@ -12,10 +12,10 @@ import { fetchReleases } from '@/lib/api/rss'
  */
 export async function GET() {
   try {
-    const releases = await fetchReleases()
+    const news = await fetchNews()
 
     return NextResponse.json(
-      { releases, count: releases.length },
+      { news, count: news.length },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
@@ -23,9 +23,9 @@ export async function GET() {
       }
     )
   } catch (error) {
-    console.error('Failed to fetch releases:', error)
+    console.error('Failed to fetch news:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch releases' },
+      { error: 'Failed to fetch news' },
       { status: 500 }
     )
   }

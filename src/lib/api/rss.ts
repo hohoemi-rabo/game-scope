@@ -15,21 +15,56 @@ const RSS_SOURCES: RSSFeedSource[] = [
   {
     name: '4Gamer',
     url: 'https://www.4gamer.net/rss/index.xml',
-    platform: 'Multi',
+    platform: '4Gamer',
+  },
+  {
+    name: '4Gamer',
+    url: 'https://www.4gamer.net/rss/pc/pc_news.xml',
+    platform: '4Gamer (PC)',
+  },
+  {
+    name: '4Gamer',
+    url: 'https://www.4gamer.net/rss/ps3/ps3_news.xml',
+    platform: '4Gamer (PlayStation)',
+  },
+  {
+    name: '4Gamer',
+    url: 'https://www.4gamer.net/rss/nintendo_switch/nintendo_switch_news.xml',
+    platform: '4Gamer (Switch)',
+  },
+  {
+    name: '4Gamer',
+    url: 'https://www.4gamer.net/rss/smartphone/smartphone_index.xml',
+    platform: '4Gamer (スマホ)',
   },
   {
     name: 'Nintendo',
     url: 'https://www.nintendo.co.jp/news/whatsnew.xml',
-    platform: 'Nintendo Switch',
+    platform: 'Nintendo',
   },
   {
     name: 'PlayStation Blog',
     url: 'https://blog.ja.playstation.com/feed/',
-    platform: 'PlayStation',
+    platform: 'PlayStation Blog',
+  },
+  {
+    name: 'Game*Spark',
+    url: 'https://www.gamespark.jp/rss/index.rdf',
+    platform: 'Game*Spark',
+  },
+  {
+    name: 'GAME Watch',
+    url: 'https://game.watch.impress.co.jp/data/rss/1.0/gmw/feed.rdf',
+    platform: 'GAME Watch',
+  },
+  {
+    name: 'GAMER',
+    url: 'https://www.gamer.ne.jp/feed/news.rdf',
+    platform: 'GAMER',
   },
 ]
 
-export interface ReleaseItem {
+export interface NewsItem {
   title: string
   link: string
   pubDate: string
@@ -39,33 +74,26 @@ export interface ReleaseItem {
 }
 
 /**
- * RSS フィードから発売予定情報を取得
- * 各ソースから情報を取得し、発売関連のキーワードでフィルタリング
+ * RSS フィードからゲームニュースを取得
+ * 各ソースから全記事を取得（フィルタリングはクライアント側で実施）
  */
-export async function fetchReleases(): Promise<ReleaseItem[]> {
-  const allReleases: ReleaseItem[] = []
+export async function fetchNews(): Promise<NewsItem[]> {
+  const allNews: NewsItem[] = []
 
   for (const source of RSS_SOURCES) {
     try {
       const feed = await parser.parseURL(source.url)
 
-      const releases = feed.items
-        .filter((item) => {
-          // 発売予定に関連するキーワードでフィルタリング
-          const keywords = ['発売', '配信', 'リリース', '予定']
-          const text = `${item.title} ${item.contentSnippet || ''}`
-          return keywords.some((keyword) => text.includes(keyword))
-        })
-        .map((item) => ({
-          title: item.title || '',
-          link: item.link || '',
-          pubDate: item.pubDate || item.isoDate || '',
-          source: source.name,
-          platform: source.platform,
-          description: item.contentSnippet,
-        }))
+      const news = feed.items.map((item) => ({
+        title: item.title || '',
+        link: item.link || '',
+        pubDate: item.pubDate || item.isoDate || '',
+        source: source.name,
+        platform: source.platform,
+        description: item.contentSnippet,
+      }))
 
-      allReleases.push(...releases)
+      allNews.push(...news)
     } catch (error) {
       console.error(`Failed to fetch RSS from ${source.name}:`, error)
       // エラーがあっても他のソースは継続
@@ -73,7 +101,7 @@ export async function fetchReleases(): Promise<ReleaseItem[]> {
   }
 
   // 日付順にソート（新しい順）
-  return allReleases.sort((a, b) => {
+  return allNews.sort((a, b) => {
     return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   })
 }

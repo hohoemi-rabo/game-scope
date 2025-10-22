@@ -1,4 +1,4 @@
-interface ReleaseCardProps {
+interface NewsCardProps {
   title: string
   link: string
   pubDate: string
@@ -8,17 +8,17 @@ interface ReleaseCardProps {
 }
 
 /**
- * 発売予定カードコンポーネント
- * RSS フィードから取得した発売予定情報を表示
+ * ニュースカードコンポーネント
+ * RSS フィードから取得したゲームニュースを表示
  */
-export default function ReleaseCard({
+export default function NewsCard({
   title,
   link,
   pubDate,
   source,
   platform,
   description,
-}: ReleaseCardProps) {
+}: NewsCardProps) {
   // 日付のフォーマット
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
