@@ -21,6 +21,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **TypeScript** (strict mode)
 - **Tailwind CSS 3.4.17** (カスタムカラーシステム)
 - **Supabase** (Database, Edge Functions, Scheduler) - MCP Server統合
+- **SWR** (クライアント側データフェッチング)
+- **use-debounce** (検索入力のデバウンス)
+- **rss-parser** (RSSフィード解析)
 - **Vercel** (デプロイ予定)
 
 ## 重要な開発コマンド
@@ -59,11 +62,16 @@ src/
 │   ├── loading.tsx               # ローディング UI ✅
 │   ├── error.tsx                 # エラー境界 ✅
 │   ├── globals.css               # グローバルスタイル ✅
-│   ├── game/[id]/
-│   │   └── page.tsx              # ゲーム詳細ページ (未実装)
-│   ├── releases/
-│   │   └── page.tsx              # 発売予定タブ (Phase 2)
-│   ├── api/                      # API Routes (Phase 2以降)
+│   ├── game/[id]/                # ゲーム詳細
+│   │   ├── page.tsx              # ゲーム詳細ページ ✅
+│   │   └── not-found.tsx         # 404ページ ✅
+│   ├── search/
+│   │   └── page.tsx              # 検索ページ ✅
+│   ├── news/
+│   │   └── page.tsx              # ニュース一覧ページ ✅
+│   ├── api/                      # API Routes
+│   │   └── news/
+│   │       └── route.ts          # ニュース取得API ✅
 │   └── components/               # UI コンポーネント
 │       ├── GameCard.tsx          # ゲームカードコンポーネント ✅
 │       ├── GameGrid.tsx          # ゲーム一覧グリッド ✅
@@ -71,21 +79,30 @@ src/
 │       ├── Container.tsx         # コンテンツ幅制限 ✅
 │       ├── LoadingSpinner.tsx    # ローディングスピナー ✅
 │       ├── Header.tsx            # ヘッダー ✅
-│       └── Footer.tsx            # フッター ✅
+│       ├── Footer.tsx            # フッター ✅
+│       ├── SearchBar.tsx         # 検索バー (debounce対応) ✅
+│       ├── FilterPanel.tsx       # フィルターパネル ✅
+│       ├── NewsCard.tsx          # ニュースカード ✅
+│       ├── BackButton.tsx        # 戻るボタン ✅
+│       ├── GameDetailHeader.tsx  # ゲーム詳細ヘッダー ✅
+│       ├── GameInfo.tsx          # ゲーム情報 ✅
+│       └── ExternalLinks.tsx     # 外部リンク ✅
 │
 ├── lib/                          # ビジネスロジック・ユーティリティ
 │   ├── supabase/
 │   │   ├── server.ts             # Server Components 用クライアント ✅
 │   │   ├── client.ts             # Client Components 用クライアント ✅
-│   │   └── types.ts              # データベース型定義 (自動生成) ✅
-│   └── api/                      # 外部API連携 (Phase 2以降)
-│       ├── opencritic.ts         # OpenCritic API
-│       ├── twitch.ts             # Twitch API
-│       └── rss.ts                # RSS フィード取得
+│   │   ├── types.ts              # データベース型定義 (自動生成) ✅
+│   │   └── search.ts             # 検索ロジック ✅
+│   └── api/
+│       └── rss.ts                # RSS フィード取得 ✅
 │
 supabase/                         # Supabase プロジェクト設定
 ├── migrations/                   # データベースマイグレーション ✅
 └── functions/                    # Edge Functions (Phase 3)
+
+scripts/
+└── seed-data.ts                  # 初期データ投入スクリプト ✅
 
 docs/                             # 開発ドキュメント
 ├── tickets/                      # 機能別開発チケット ✅
@@ -99,10 +116,11 @@ docs/                             # 開発ドキュメント
    - 日次自動更新 (Supabase Scheduler)
 
 2. **データソース**
-   - OpenCritic API: ゲームスコア・レビュー
-   - Twitch API: 配信情報・クリップ
-   - Steam Web API: 海外発売予定
-   - RSS (4Gamer/任天堂/PS Blog): 国内発売予定
+   - **Supabase Database**: ゲーム評価データ (手動投入 + 将来的にAPI連携)
+   - **RSS Feeds (10サイト)**: ゲームニュース
+     - 4Gamer (総合/PC/PlayStation/Switch/スマホ)
+     - Nintendo, PlayStation Blog
+     - Game*Spark, GAME Watch, GAMER
 
 ## TypeScript 設定の重要ポイント
 
@@ -158,16 +176,56 @@ docs/                             # 開発ドキュメント
 4. **operation_logs** - 操作ログ
    - 自動更新の実行記録、エラートラッキング
 
+## 主要機能の実装パターン
+
+### 1. ニュース一覧機能 (RSS統合)
+
+**実装場所**: `src/app/news/page.tsx`, `src/lib/api/rss.ts`, `src/app/api/news/route.ts`
+
+**RSSソース (10サイト)**:
+- 4Gamer (総合、PC、PlayStation、Switch、スマホの5フィード)
+- Nintendo、PlayStation Blog
+- Game*Spark、GAME Watch、GAMER
+
+**アーキテクチャ**:
+```
+RSS Feeds (10 sources)
+  ↓
+lib/api/rss.ts (fetchNews) - サーバー側でRSS取得
+  ↓
+API Route (/api/news) - 1時間キャッシュ (s-maxage=3600)
+  ↓
+Client (SWR) - ニュース一覧ページ
+  ↓
+2軸フィルタリング (ニュースサイト名 + キーワード)
+```
+
+**重要**: バックエンドではキーワードフィルタリングせず全記事取得。クライアント側でフィルタリング。
+
+### 2. 検索機能 (ゲーム検索)
+
+**実装場所**: `src/app/search/page.tsx`, `src/lib/supabase/search.ts`
+
+**フィルター機能**:
+- タイトル検索（日本語/英語、debounce 500ms）
+- プラットフォームフィルター（overlaps演算子使用）
+- スコア範囲フィルター（80+、60-79、60未満）
+
+**URL同期**: 検索状態はURLパラメータに保存（`?q=...&platforms=...&minScore=...`）
+
+### 3. ゲーム詳細ページ
+
+**実装場所**: `src/app/game/[id]/page.tsx`
+
+**動的メタデータ生成**: `generateMetadata()` でSEO対応
+**404ハンドリング**: `notFound()` 関数使用
+**Server Component**: データフェッチングはサーバー側
+
 ## 開発時の注意事項
 
 ### MVP段階での優先事項
 
-1. **段階的な実装**: Phase 1 → Phase 2 → Phase 3 の順で実装
-2. **Phase 1 (MVP 必須機能)**:
-   - トップページ (高評価ゲーム一覧)
-   - ゲーム詳細ページ
-   - Supabase 初期データ投入 (20件)
-3. **Phase 2以降は明示的な指示があるまで実装しない**
+Phase 1とPhase 2は完了済み。Phase 3（運用自動化）が次のステップ。
 
 ### コーディング規約
 
@@ -213,21 +271,21 @@ docs/                             # 開発ドキュメント
 
 **開発チケット一覧:**
 
-**Phase 1 (MVP - 必須機能):**
+**Phase 1 (MVP - 必須機能):** ✅ 完了
 - `00_環境セットアップ.md` - プロジェクト初期化、Supabase設定 ✅
 - `01_データベーススキーマ作成.md` - テーブル定義、RLS設定 ✅
 - `02_Supabaseクライアント設定.md` - Server/Client用クライアント実装 ✅
 - `03_デザインシステム実装.md` - Tailwind設定、共通コンポーネント ✅
 - `04_ゲームカードコンポーネント.md` - GameCard/GameGrid実装 ✅
 - `05_トップページ実装.md` - 高評価ゲーム一覧ページ ✅
-- `06_ゲーム詳細ページ実装.md` - 動的ルーティング、詳細表示 (次のタスク)
-- `07_初期データ投入.md` - テストデータ20件投入 (必須)
+- `06_ゲーム詳細ページ実装.md` - 動的ルーティング、詳細表示 ✅
+- `07_初期データ投入.md` - テストデータ20件投入 ✅
 
-**Phase 2 (UX拡張):**
-- `08_検索機能実装.md` - リアルタイム検索、フィルター
-- `09_発売予定タブ実装.md` - RSSフィード取得、一覧表示
+**Phase 2 (UX拡張):** ✅ 完了
+- `08_検索機能実装.md` - リアルタイム検索、フィルター ✅
+- `09_ニュース一覧実装.md` - RSSフィード取得、一覧表示 ✅
 
-**Phase 3 (運用自動化):**
+**Phase 3 (運用自動化):** 未着手
 - `10_自動更新システム.md` - Edge Functions、Cron Jobs
 
 ## 環境変数 (.env.local)
@@ -549,12 +607,17 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
 
 ### 現在の開発状況
 
-Phase 1 (MVP) の進捗:
-- ✅ 00-05: 環境構築からトップページまで完了
-- 🚧 06: ゲーム詳細ページ (次のタスク)
-- ⚠️ 07: 初期データ投入 (必須 - データがないとページが空)
+- ✅ **Phase 1 (MVP)**: 完了
+  - トップページ（高評価ゲーム一覧）
+  - ゲーム詳細ページ
+  - 初期データ投入（20件）
 
-**重要**: チケット07のデータ投入を完了しないと、トップページにゲームが表示されません。
+- ✅ **Phase 2 (UX拡張)**: 完了
+  - 検索機能（debounce、プラットフォームフィルター、スコアフィルター）
+  - ニュース一覧（10RSSソースから取得、ニュースサイト・キーワードフィルター）
+
+- ⏳ **Phase 3 (運用自動化)**: 次のステップ
+  - 自動更新システム（Edge Functions、Cron Jobs）
 
 ### コードレビューのポイント
 
