@@ -49,39 +49,46 @@ npm run seed
 
 ## アーキテクチャ構造
 
-### ディレクトリ設計 (計画)
+### ディレクトリ設計
 
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── page.tsx                  # トップページ (高評価ゲーム一覧)
-│   ├── layout.tsx                # ルートレイアウト
-│   ├── globals.css               # グローバルスタイル
+│   ├── page.tsx                  # トップページ (高評価ゲーム一覧) ✅
+│   ├── layout.tsx                # ルートレイアウト (Header/Footer含む) ✅
+│   ├── loading.tsx               # ローディング UI ✅
+│   ├── error.tsx                 # エラー境界 ✅
+│   ├── globals.css               # グローバルスタイル ✅
 │   ├── game/[id]/
-│   │   └── page.tsx              # ゲーム詳細ページ
+│   │   └── page.tsx              # ゲーム詳細ページ (未実装)
 │   ├── releases/
-│   │   └── page.tsx              # 発売予定タブ
-│   ├── api/                      # API Routes (Next.js)
+│   │   └── page.tsx              # 発売予定タブ (Phase 2)
+│   ├── api/                      # API Routes (Phase 2以降)
 │   └── components/               # UI コンポーネント
-│       ├── GameCard.tsx          # ゲームカードコンポーネント
-│       ├── ScoreBadge.tsx        # スコア表示バッジ
-│       └── SearchBar.tsx         # 検索バー
+│       ├── GameCard.tsx          # ゲームカードコンポーネント ✅
+│       ├── GameGrid.tsx          # ゲーム一覧グリッド ✅
+│       ├── ScoreBadge.tsx        # スコア表示バッジ ✅
+│       ├── Container.tsx         # コンテンツ幅制限 ✅
+│       ├── LoadingSpinner.tsx    # ローディングスピナー ✅
+│       ├── Header.tsx            # ヘッダー ✅
+│       └── Footer.tsx            # フッター ✅
 │
 ├── lib/                          # ビジネスロジック・ユーティリティ
 │   ├── supabase/
-│   │   ├── client.ts             # Supabase クライアント設定
-│   │   └── types.ts              # データベース型定義
-│   └── api/                      # 外部API連携
+│   │   ├── server.ts             # Server Components 用クライアント ✅
+│   │   ├── client.ts             # Client Components 用クライアント ✅
+│   │   └── types.ts              # データベース型定義 (自動生成) ✅
+│   └── api/                      # 外部API連携 (Phase 2以降)
 │       ├── opencritic.ts         # OpenCritic API
 │       ├── twitch.ts             # Twitch API
 │       └── rss.ts                # RSS フィード取得
 │
 supabase/                         # Supabase プロジェクト設定
-├── migrations/                   # データベースマイグレーション
-└── functions/                    # Edge Functions
+├── migrations/                   # データベースマイグレーション ✅
+└── functions/                    # Edge Functions (Phase 3)
 
 docs/                             # 開発ドキュメント
-├── tickets/                      # 機能別開発チケット
+├── tickets/                      # 機能別開発チケット ✅
 └── troubleshooting/              # エラー解決記録
 ```
 
@@ -207,14 +214,14 @@ docs/                             # 開発ドキュメント
 **開発チケット一覧:**
 
 **Phase 1 (MVP - 必須機能):**
-- `00_環境セットアップ.md` - プロジェクト初期化、Supabase設定
-- `01_データベーススキーマ作成.md` - テーブル定義、RLS設定
-- `02_Supabaseクライアント設定.md` - Server/Client用クライアント実装
-- `03_デザインシステム実装.md` - Tailwind設定、共通コンポーネント
-- `04_ゲームカードコンポーネント.md` - GameCard/GameGrid実装
-- `05_トップページ実装.md` - 高評価ゲーム一覧ページ
-- `06_ゲーム詳細ページ実装.md` - 動的ルーティング、詳細表示
-- `07_初期データ投入.md` - テストデータ20件投入
+- `00_環境セットアップ.md` - プロジェクト初期化、Supabase設定 ✅
+- `01_データベーススキーマ作成.md` - テーブル定義、RLS設定 ✅
+- `02_Supabaseクライアント設定.md` - Server/Client用クライアント実装 ✅
+- `03_デザインシステム実装.md` - Tailwind設定、共通コンポーネント ✅
+- `04_ゲームカードコンポーネント.md` - GameCard/GameGrid実装 ✅
+- `05_トップページ実装.md` - 高評価ゲーム一覧ページ ✅
+- `06_ゲーム詳細ページ実装.md` - 動的ルーティング、詳細表示 (次のタスク)
+- `07_初期データ投入.md` - テストデータ20件投入 (必須)
 
 **Phase 2 (UX拡張):**
 - `08_検索機能実装.md` - リアルタイム検索、フィルター
@@ -535,9 +542,19 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
 1. **チケット確認**: `docs/tickets/` から該当するチケットを開く
 2. **実装**: チケット内のタスク一覧に従って実装
 3. **Todo更新**: 完了したタスクに `- [x]` をマーク
-4. **動作確認**: 開発サーバーで動作確認
-5. **ステータス更新**: チケットのステータスを更新（`[進行中]` → `[完了]`）
-6. **エラー記録**: 問題が発生した場合は `docs/troubleshooting/` に記録
+4. **Lint & Build**: `npm run lint && npm run build` で品質確認
+5. **動作確認**: 開発サーバーで動作確認
+6. **ステータス更新**: チケットのステータスを更新（`[進行中]` → `[完了]`）
+7. **エラー記録**: 問題が発生した場合は `docs/troubleshooting/` に記録
+
+### 現在の開発状況
+
+Phase 1 (MVP) の進捗:
+- ✅ 00-05: 環境構築からトップページまで完了
+- 🚧 06: ゲーム詳細ページ (次のタスク)
+- ⚠️ 07: 初期データ投入 (必須 - データがないとページが空)
+
+**重要**: チケット07のデータ投入を完了しないと、トップページにゲームが表示されません。
 
 ### コードレビューのポイント
 
@@ -546,6 +563,8 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
 - TypeScript の型定義が厳密か
 - エラーハンドリングが実装されているか
 - Supabase RLS ポリシーが設定されているか
+- Next.js Image コンポーネントで画像最適化されているか
+- ISR (revalidate) が適切に設定されているか
 
 ## 参考資料
 
