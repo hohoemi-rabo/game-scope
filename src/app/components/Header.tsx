@@ -32,7 +32,13 @@ export default function Header() {
             >
               高評価
             </Link>
-            {/* Phase 2 で追加 */}
+            <Link
+              href="/search"
+              className="text-text-secondary hover:text-text-primary transition-colors"
+            >
+              検索
+            </Link>
+            {/* Phase 2 で追加予定 */}
             {/* <Link href="/releases">発売予定</Link> */}
           </nav>
         </div>
