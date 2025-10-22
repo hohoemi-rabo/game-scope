@@ -38,8 +38,12 @@ export default function Header() {
             >
               検索
             </Link>
-            {/* Phase 2 で追加予定 */}
-            {/* <Link href="/releases">発売予定</Link> */}
+            <Link
+              href="/releases"
+              className="text-text-secondary hover:text-text-primary transition-colors"
+            >
+              発売予定
+            </Link>
           </nav>
         </div>
       </Container>
