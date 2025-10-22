@@ -1,6 +1,6 @@
 # 02_Supabaseクライアント設定
 
-**ステータス**: [未着手]
+**ステータス**: [完了]
 **優先度**: 高
 **Phase**: Phase 1 (MVP)
 
@@ -18,27 +18,27 @@ Next.js アプリケーションから Supabase にアクセスするための�
 ## タスク一覧
 
 ### 1. ディレクトリ構造の作成
-- [ ] `src/lib/supabase/` ディレクトリ作成
-- [ ] `src/lib/api/` ディレクトリ作成
+- [x] `src/lib/supabase/` ディレクトリ作成
+- [x] `src/lib/api/` ディレクトリ作成
 
 ### 2. Server Components 用クライアント
-- [ ] `src/lib/supabase/server.ts` 作成
-- [ ] サーバー専用クライアント関数の実装
-- [ ] `server-only` パッケージでのクライアント保護
+- [x] `src/lib/supabase/server.ts` 作成
+- [x] サーバー専用クライアント関数の実装
+- [x] `server-only` パッケージでのクライアント保護
 
 ### 3. Client Components 用クライアント
-- [ ] `src/lib/supabase/client.ts` 作成
-- [ ] ブラウザ用クライアント関数の実装
+- [x] `src/lib/supabase/client.ts` 作成
+- [x] ブラウザ用クライアント関数の実装
 
 ### 4. TypeScript 型定義
-- [ ] Supabase CLI で型定義を自動生成
-- [ ] `src/lib/supabase/types.ts` に型定義を配置
-- [ ] 型定義の自動更新スクリプト追加
+- [x] Supabase CLI で型定義を自動生成
+- [x] `src/lib/supabase/types.ts` に型定義を配置
+- [x] 型定義の自動更新スクリプト追加
 
 ### 5. データアクセス関数の実装
-- [ ] ゲーム情報取得関数（`getGames`, `getGame`）
-- [ ] Twitch 情報取得関数
-- [ ] React の `cache()` でメモ化
+- [x] ゲーム情報取得関数（`getGames`, `getGame`）
+- [x] Twitch 情報取得関数
+- [x] React の `cache()` でメモ化
 
 ## 実装詳細
 
@@ -172,11 +172,11 @@ npx supabase gen types typescript --project-id your-project-id > src/lib/supabas
 
 ## 完了条件
 
-- [ ] Server Components 用クライアントが正しく動作する
-- [ ] Client Components 用クライアントが正しく動作する
-- [ ] TypeScript 型定義が生成され、型安全にアクセスできる
-- [ ] データアクセス関数がエラーハンドリングを含む
-- [ ] `cache()` によるメモ化が機能している
+- [x] Server Components 用クライアントが正しく動作する
+- [x] Client Components 用クライアントが正しく動作する
+- [x] TypeScript 型定義が生成され、型安全にアクセスできる
+- [x] データアクセス関数がエラーハンドリングを含む
+- [x] `cache()` によるメモ化が機能している
 
 ## 関連チケット
 
