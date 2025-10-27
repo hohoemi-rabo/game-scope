@@ -70,8 +70,13 @@ src/
 │   ├── news/
 │   │   └── page.tsx              # ニュース一覧ページ ✅
 │   ├── api/                      # API Routes
-│   │   └── news/
-│   │       └── route.ts          # ニュース取得API ✅
+│   │   ├── news/
+│   │   │   └── route.ts          # ニュース取得API ✅
+│   │   └── twitch/
+│   │       ├── streams/[gameId]/
+│   │       │   └── route.ts      # ライブ配信API ✅
+│   │       └── clips/[gameId]/
+│   │           └── route.ts      # クリップAPI ✅
 │   └── components/               # UI コンポーネント
 │       ├── GameCard.tsx          # ゲームカードコンポーネント ✅
 │       ├── GameGrid.tsx          # ゲーム一覧グリッド ✅
@@ -84,18 +89,24 @@ src/
 │       ├── FilterPanel.tsx       # フィルターパネル ✅
 │       ├── NewsCard.tsx          # ニュースカード ✅
 │       ├── BackButton.tsx        # 戻るボタン ✅
-│       ├── GameDetailHeader.tsx  # ゲーム詳細ヘッダー ✅
-│       ├── GameInfo.tsx          # ゲーム情報 ✅
-│       └── ExternalLinks.tsx     # 外部リンク ✅
+│       ├── GameInfo.tsx          # ゲーム情報 (LIVEバッジ対応) ✅
+│       ├── TwitchLivePlayer.tsx  # Twitch プレイヤー埋め込み ✅
+│       ├── TwitchStreamList.tsx  # ライブ配信一覧 ✅
+│       ├── TwitchClipGallery.tsx # クリップギャラリー ✅
+│       └── TwitchSection.tsx     # Twitch セクション (タブUI) ✅
 │
 ├── lib/                          # ビジネスロジック・ユーティリティ
 │   ├── supabase/
 │   │   ├── server.ts             # Server Components 用クライアント ✅
 │   │   ├── client.ts             # Client Components 用クライアント ✅
-│   │   ├── types.ts              # データベース型定義 (自動生成) ✅
+│   │   ├── types.ts              # データベース型定義 (手動更新) ✅
 │   │   └── search.ts             # 検索ロジック ✅
-│   └── api/
-│       └── rss.ts                # RSS フィード取得 ✅
+│   ├── api/
+│   │   ├── rss.ts                # RSS フィード取得 ✅
+│   │   ├── twitch.ts             # Twitch API クライアント ✅
+│   │   └── game-twitch.ts        # Twitch x Game統合ロジック ✅
+│   └── hooks/
+│       └── useTwitchPlayer.ts    # Twitch Player SDK フック ✅
 │
 supabase/                         # Supabase プロジェクト設定
 ├── migrations/                   # データベースマイグレーション ✅
@@ -165,16 +176,35 @@ docs/                             # 開発ドキュメント
 1. **games** - ゲーム情報
    - タイトル (日本語/英語)
    - プラットフォーム、メタスコア、レビュー数
-   - OpenCritic ID (外部キー)
+   - **opencritic_id** (TEXT): OpenCriticのURLスラッグ（例: `"elden-ring"`, `"baldurs-gate-3"`）
+     - **重要**: 数値IDではなくスラッグ形式で保存されている
+     - OpenCritic URLの構築: `https://opencritic.com/game/{numeric_id}/{slug}`
+     - 現状の問題: 数値IDが不明なため、スラッグのみでのリンクは404になる
+   - **twitch_game_id** (TEXT): Twitch Game ID（自動キャッシュ、1週間有効）
+   - **twitch_last_checked_at** (TIMESTAMPTZ): Twitch ID最終確認日時
 
 2. **twitch_links** - Twitch連携情報
+   - game_id, twitch_game_id
    - クリップURL、ライブ配信状況、視聴者数
+   - 配信数、総視聴者数、クリップ数
 
 3. **releases** - 発売予定情報
    - タイトル、プラットフォーム、発売日、情報ソース
 
 4. **operation_logs** - 操作ログ
    - 自動更新の実行記録、エラートラッキング
+
+### OpenCritic ID の扱いに関する注意事項
+
+**現在の課題**:
+- `opencritic_id` カラムにはスラッグ（例: `"elden-ring"`）のみが保存されている
+- OpenCriticの正しいURL形式は `https://opencritic.com/game/{numeric_id}/{slug}` （例: `https://opencritic.com/game/12090/elden-ring`）
+- スラッグのみのURL（`https://opencritic.com/game/elden-ring`）は404エラーになる
+
+**解決策の選択肢**:
+1. **数値IDを追加取得**: OpenCritic APIまたはスクレイピングで数値IDを取得（Phase 3以降）
+2. **外部リンクを修正**: 当面はスラッグのみでアクセス可能な別の方法を検討
+3. **データ移行**: 既存データに数値IDを追加するマイグレーション実行
 
 ## 主要機能の実装パターン
 
@@ -220,6 +250,25 @@ Client (SWR) - ニュース一覧ページ
 **動的メタデータ生成**: `generateMetadata()` でSEO対応
 **404ハンドリング**: `notFound()` 関数使用
 **Server Component**: データフェッチングはサーバー側
+
+### 4. Twitch連携機能
+
+**実装場所**:
+- `src/lib/api/twitch.ts` - Twitch API クライアント（OAuth、ストリーム・クリップ取得）
+- `src/lib/api/game-twitch.ts` - ゲーム×Twitch統合ロジック（Game ID キャッシュ）
+- `src/app/api/twitch/streams/[gameId]/route.ts` - ライブ配信API（5分キャッシュ）
+- `src/app/api/twitch/clips/[gameId]/route.ts` - クリップAPI（1時間キャッシュ）
+
+**UIコンポーネント**:
+- `TwitchLivePlayer` - Twitch Player SDK埋め込み
+- `TwitchStreamList` - ライブ配信一覧（SWR自動更新60秒）
+- `TwitchClipGallery` - クリップギャラリー（モーダル再生）
+- `TwitchSection` - タブUI（配信/クリップ切り替え）
+
+**キャッシュ戦略**:
+- Twitch Game ID: データベースキャッシュ 1週間
+- ライブ配信情報: API キャッシュ 5分
+- クリップ情報: API キャッシュ 1時間
 
 ## 開発時の注意事項
 
@@ -285,11 +334,11 @@ Phase 1とPhase 2は完了済み。Phase 3（運用自動化）が次のステ�
 - `08_検索機能実装.md` - リアルタイム検索、フィルター ✅
 - `09_ニュース一覧実装.md` - RSSフィード取得、一覧表示 ✅
 
-**Phase 2.5 (Twitch連携):** チケット作成完了
-- `11_Twitch_API基本実装.md` - OAuth認証、トークン管理、基本API
-- `12_Twitch配信情報取得機能.md` - ライブ配信・クリップ取得、API Routes
-- `13_Twitch埋め込みコンポーネント実装.md` - UIコンポーネント、プレイヤー埋め込み
-- `14_ゲーム詳細ページTwitch統合.md` - 既存ページへの統合、タブUI
+**Phase 2.5 (Twitch連携):** ✅ 完了
+- `11_Twitch_API基本実装.md` - OAuth認証、トークン管理、基本API ✅
+- `12_Twitch配信情報取得機能.md` - ライブ配信・クリップ取得、API Routes ✅
+- `13_Twitch埋め込みコンポーネント実装.md` - UIコンポーネント、プレイヤー埋め込み ✅
+- `14_ゲーム詳細ページTwitch統合.md` - 既存ページへの統合、タブUI ✅
 
 **Phase 3 (運用自動化):** 保留中
 - `10_自動更新システム.md` - Edge Functions、Cron Jobs
@@ -622,11 +671,12 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - 検索機能（debounce、プラットフォームフィルター、スコアフィルター）
   - ニュース一覧（10RSSソースから取得、ニュースサイト・キーワードフィルター）
 
-- 📝 **Phase 2.5 (Twitch連携)**: チケット作成完了、実装待ち
+- ✅ **Phase 2.5 (Twitch連携)**: 完了
   - Twitch API基本実装（OAuth、トークン管理）
   - 配信情報取得機能（ライブ配信・クリップ）
   - 埋め込みコンポーネント（プレイヤー、ギャラリー）
   - ゲーム詳細ページ統合
+  - Twitch Game ID キャッシュ機構（1週間）
 
 - ⏸️ **Phase 3 (運用自動化)**: 保留中
   - 自動更新システム（Edge Functions、Cron Jobs）
