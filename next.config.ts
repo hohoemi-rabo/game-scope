@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'img.opencritic.com',
         pathname: '/game/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.rawg.io',
+        pathname: '/media/**',
+      },
     ],
   },
 };

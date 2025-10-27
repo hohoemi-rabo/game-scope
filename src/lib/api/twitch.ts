@@ -13,7 +13,7 @@ let cachedToken: {
  * Twitch OAuth トークンを取得
  * クライアントクレデンシャルフローを使用
  */
-async function getTwitchToken(): Promise<string> {
+export async function getTwitchToken(): Promise<string> {
   // キャッシュが有効な場合は再利用
   if (cachedToken && cachedToken.expires_at > Date.now()) {
     return cachedToken.access_token

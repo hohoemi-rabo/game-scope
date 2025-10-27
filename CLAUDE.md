@@ -44,16 +44,18 @@ npm run lint
 # Supabase 型定義の生成 (データベーススキーマから自動生成)
 npm run supabase:types
 
-# OpenCriticトップ20をSupabaseに同期（既存データを置き換え）
-npm run sync:opencritic
+# ハイブリッドデータ同期（OpenCritic + RAWG）
+npx tsx scripts/sync-hybrid-to-supabase.ts
 ```
 
 開発サーバーは http://localhost:3000 で起動します。
 
 **重要な開発用スクリプト** (`scripts/` ディレクトリ):
-- `sync-opencritic-to-supabase.ts` - OpenCriticデータ同期（本番使用）
-- `check-twitch-game-names.ts` - Twitchゲーム名確認
-- `test-twitch-fallback.ts` - Twitchフォールバック検索テスト
+- `sync-hybrid-to-supabase.ts` - **ハイブリッドデータ同期（本番使用）**
+  - OpenCriticからトップ20の最新ゲーム取得
+  - RAWGから英語説明文とジャンル補完
+- `test-rawg-api.ts` - RAWG API動作確認
+- `test-opencritic-*.ts` - OpenCritic API テストスクリプト群
 
 ## アーキテクチャ構造
 
@@ -104,13 +106,14 @@ src/
 │   ├── supabase/
 │   │   ├── server.ts             # Server Components 用クライアント ✅
 │   │   ├── client.ts             # Client Components 用クライアント ✅
-│   │   ├── types.ts              # データベース型定義 (opencritic_numeric_id追加) ✅
+│   │   ├── types.ts              # データベース型定義（ハイブリッド構成対応） ✅
 │   │   └── search.ts             # 検索ロジック ✅
 │   ├── api/
 │   │   ├── rss.ts                # RSS フィード取得 ✅
 │   │   ├── twitch.ts             # Twitch API クライアント ✅
 │   │   ├── game-twitch.ts        # Twitch x Game統合ロジック ✅
-│   │   └── opencritic.ts         # OpenCritic API クライアント ✅
+│   │   ├── opencritic.ts         # OpenCritic API クライアント ✅
+│   │   └── rawg.ts               # RAWG API クライアント ✅
 │   └── hooks/
 │       └── useTwitchPlayer.ts    # Twitch Player SDK フック ✅
 │
@@ -119,10 +122,10 @@ supabase/                         # Supabase プロジェクト設定
 └── functions/                    # Edge Functions (Phase 3)
 
 scripts/
-├── seed-data.ts                  # 初期データ投入スクリプト ✅
-├── update-opencritic-ids.ts      # OpenCritic数値ID更新スクリプト ✅
+├── sync-hybrid-to-supabase.ts    # **ハイブリッドデータ同期（本番使用）** ✅
+├── test-rawg-api.ts              # RAWG API 動作確認 ✅
 ├── test-opencritic-*.ts          # OpenCritic API テストスクリプト群 ✅
-└── check-game-data-fields.ts     # OpenCritic データ構造確認 ✅
+└── (legacy scripts...)           # 旧スクリプト（参考用）
 
 docs/                             # 開発ドキュメント
 ├── tickets/                      # 機能別開発チケット ✅
@@ -137,8 +140,10 @@ docs/                             # 開発ドキュメント
    - コスト削減のため、Supabaseをキャッシュ層として活用
    - 日次自動更新 (Supabase Scheduler)
 
-2. **データソース**
-   - **Supabase Database**: ゲーム評価データ (手動投入 + 将来的にAPI連携)
+2. **データソース（ハイブリッド構成）**
+   - **OpenCritic API**: 最新トップ20ゲームの評価データ（スコア、レビュー数、画像、リンク）
+   - **RAWG API**: 英語説明文、ジャンル情報の補完
+   - **Supabase Database**: キャッシュ層として活用（手動同期）
    - **RSS Feeds (10サイト)**: ゲームニュース
      - 4Gamer (総合/PC/PlayStation/Switch/スマホ)
      - Nintendo, PlayStation Blog
@@ -183,20 +188,30 @@ docs/                             # 開発ドキュメント
 
 ## データベース設計
 
-### 主要テーブル (REQUIREMENTS.md より)
+### 主要テーブル - ハイブリッド構成
 
-1. **games** - ゲーム情報
-   - タイトル (日本語/英語)
-   - プラットフォーム、メタスコア、レビュー数
-   - **opencritic_id** (TEXT): OpenCriticのURLスラッグ（例: `"elden-ring"`, `"baldurs-gate-3"`）
-   - **opencritic_numeric_id** (INTEGER): OpenCriticの数値ID（例: 12090, 9136）
-     - OpenCritic URLの構築: `https://opencritic.com/game/{numeric_id}/{slug}`
-     - 全20ゲームがOpenCriticトップ20から自動同期
-   - **opencritic_stats** (TEXT): OpenCritic統計情報（スコア、推奨度、ランク）
-     - 形式: "Top Critic Score: XX%, XX% Recommended, Tier: Mighty"
-     - 詳細ページで整形表示（評価スコア、推奨度、ランクの3つのカード）
-   - **twitch_game_id** (TEXT): Twitch Game ID（自動キャッシュ、1週間有効）
-   - **twitch_last_checked_at** (TIMESTAMPTZ): Twitch ID最終確認日時
+1. **games** - ゲーム情報（OpenCritic + RAWG）
+   - **共通フィールド**:
+     - `title_ja` (TEXT): 日本語タイトル（手動で追加）
+     - `title_en` (TEXT): 英語タイトル
+     - `platforms` (TEXT[]): プラットフォーム配列
+     - `metascore` (INTEGER): メタスコア
+     - `release_date` (DATE): 発売日
+     - `thumbnail_url` (TEXT): サムネイル画像URL
+
+   - **OpenCriticフィールド**:
+     - `opencritic_id` (TEXT): OpenCriticのURLスラッグ（例: `"elden-ring"`）
+     - `opencritic_numeric_id` (INTEGER): OpenCriticの数値ID（例: 12090）
+     - `review_count` (INTEGER): レビュー数
+     - OpenCritic URL構築: `https://opencritic.com/game/{numeric_id}/{slug}`
+
+   - **RAWGフィールド**（補完データ）:
+     - `description_en` (TEXT): 英語説明文
+     - `genres` (TEXT[]): ジャンル配列
+
+   - **Twitchフィールド**:
+     - `twitch_game_id` (TEXT): Twitch Game ID（自動キャッシュ、1週間有効）
+     - `twitch_last_checked_at` (TIMESTAMPTZ): Twitch ID最終確認日時
 
 2. **twitch_links** - Twitch連携情報
    - game_id, twitch_game_id
@@ -209,55 +224,49 @@ docs/                             # 開発ドキュメント
 4. **operation_logs** - 操作ログ
    - 自動更新の実行記録、エラートラッキング
 
-### OpenCritic API 統合 (Phase 2.5完了)
+### ハイブリッドデータ統合 (Phase 2.5完了) ✅
 
-**実装内容** ✅:
-1. `opencritic_numeric_id` カラムをgamesテーブルに追加（マイグレーション実行済）
-2. 全20ゲームの数値IDを手動収集してデータベース更新完了
-3. `GameInfo.tsx` コンポーネントで正しいURL形式に修正
-4. OpenCritic APIクライアント (`lib/api/opencritic.ts`) 作成済
-5. **`/game` エンドポイント発見** - 1リクエストで20件のゲームデータ取得可能 ✅
-6. テストページ (`/test-opencritic`) で動作確認完了 ✅
+**現在の構成**: OpenCritic (主データ) + RAWG (補完データ)
 
-**OpenCritic API 重要な発見**:
+**データ取得フロー**:
+1. **OpenCritic API** - `/game` エンドポイントからトップ20ゲーム取得
+   - 最新の高評価ゲーム（2020年代中心）
+   - スコア、レビュー数、プラットフォーム、画像、リンク
+2. **RAWG API** - 各ゲームの英語タイトルで検索
+   - 説明文 (`description_raw`)
+   - ジャンル配列
+3. **Supabase** - ハイブリッドデータをgamesテーブルに保存
 
-**利用可能なエンドポイント**:
-- ✅ `/game` - トップ20ゲームの一覧（詳細情報含む）
-- ✅ `/outlet` - レビューサイト一覧
-- ❌ `/game/hall-of-fame`, `/game/popular` など - 404エラー（RapidAPI経由では利用不可）
-
-**`/game` エンドポイントのレスポンス**:
+**OpenCritic API (`/game` エンドポイント)**:
 ```json
 {
-  "id": 4504,
-  "name": "Super Mario Odyssey",
-  "topCriticScore": 96.81,
-  "numReviews": 157,
-  "percentRecommended": 98.01,
-  "tier": "Mighty",
-  "Platforms": [...],
-  "images": { "box": { "og": "game/4504/o/..." } },
-  "Genres": [...],
-  "firstReleaseDate": "2017-10-27",
-  "url": "https://opencritic.com/game/4504/super-mario-odyssey"
+  "id": 9136,
+  "name": "Baldur's Gate 3",
+  "topCriticScore": 96.31,
+  "numReviews": 161,
+  "Platforms": [{"shortName": "PC"}, {"shortName": "PS5"}],
+  "images": {"box": {"og": "game/9136/o/..."}},
+  "firstReleaseDate": "2023-08-03",
+  "url": "https://opencritic.com/game/9136/baldurs-gate-3"
 }
 ```
 
-**重要**:
-- 1リクエストで20件取得可能（レート制限対策に有効）
-- 詳細情報（スコア、レビュー数、画像URL、OpenCriticリンク）がすべて含まれる
-- 画像URL: `https://img.opencritic.com/{images.box.og}` で取得
-- Next.jsの`next.config.ts`に`img.opencritic.com`の許可設定が必要
+**RAWG API**:
+```typescript
+// ゲーム検索
+searchRAWGGame(gameName: string) -> GameRawg | null
+// 詳細情報取得（説明文含む）
+getRAWGGameDetails(gameId: number) -> { description_raw: string, ... }
+```
 
-**URL形式**:
-- 正しい形式: `https://opencritic.com/game/{numeric_id}/{slug}`
-- 例: `https://opencritic.com/game/12090/elden-ring`
-- APIレスポンスに完全なURLが含まれる（`url`フィールド）
+**統合スクリプト**: `scripts/sync-hybrid-to-supabase.ts`
+- 実行: `npx tsx scripts/sync-hybrid-to-supabase.ts`
+- 処理: 既存データ削除 → OpenCritic 20件取得 → 各ゲームRAWG補完 → Supabase投入
+- APIレート制限: 300ms待機（RAWG: 20,000req/月）
 
-**データ例**:
-- Elden Ring: numeric_id = 12090, slug = "elden-ring"
-- Baldur's Gate 3: numeric_id = 9136, slug = "baldurs-gate-3"
-- Zelda TOTK: numeric_id = 14343, slug = "zelda-totk"
+**画像URL設定** (`next.config.ts`):
+- `img.opencritic.com` - OpenCritic画像
+- `media.rawg.io` - RAWG画像（スクリーンショット用）
 
 ## 主要機能の実装パターン
 
@@ -422,11 +431,11 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# External APIs
-OPENCRITIC_API_KEY=
-TWITCH_CLIENT_ID=
-TWITCH_CLIENT_SECRET=
-STEAM_API_KEY=
+# External APIs（ハイブリッド構成）
+OPENCRITIC_API_KEY=     # OpenCritic API (RapidAPI経由)
+RAWG_API_KEY=           # RAWG API (説明文・ジャンル取得用)
+TWITCH_CLIENT_ID=       # Twitch API
+TWITCH_CLIENT_SECRET=   # Twitch API
 ```
 
 ## Next.js 15 App Router ベストプラクティス
@@ -754,26 +763,24 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - 検索機能（debounce、プラットフォームフィルター、スコアフィルター）
   - ニュース一覧（10RSSソースから取得、ニュースサイト・キーワードフィルター）
 
-- ✅ **Phase 2.5 (Twitch連携 + OpenCritic修正)**: 完了
+- ✅ **Phase 2.5 (Twitch連携 + ハイブリッド構成)**: 完了
   - Twitch API基本実装（OAuth、トークン管理）
   - 配信情報取得機能（ライブ配信・クリップ）
   - 埋め込みコンポーネント（プレイヤー、ギャラリー）
   - ゲーム詳細ページ統合
   - Twitch Game ID キャッシュ機構（1週間）
   - **Twitchゲーム名フォールバック検索**（タイトル表記ゆれ対応）
-  - **OpenCritic数値ID対応**（全20ゲーム更新完了）
-  - **OpenCritic API `/game` エンドポイント発見・テスト完了**
+  - **OpenCritic + RAWG ハイブリッド構成実装** ✅
+    - OpenCritic: 最新トップ20ゲーム（評価、画像、リンク）
+    - RAWG: 英語説明文、ジャンル補完
+    - データベーススキーマ統合（不要カラム削除）
+    - 統合同期スクリプト実装
   - **プロジェクトローカルSupabase MCP設定**
-  - **OpenCriticトップ20への完全置き換え**（データベース全件更新完了、画像18/20件表示）
-  - **`opencritic_stats`カラム追加**（統計情報の整形表示）
-  - **FilterPanel修正**（プラットフォーム名マッピング）
-  - **GameCard画像調整**（`scale-90`で表示改善）
 
 - 🔜 **Phase 3 (運用自動化)**: デプロイ前に実装予定
-  - OpenCritic `/game` エンドポイントを利用した日次自動更新
-  - 1リクエスト/日で20件取得（月30リクエスト、無料枠100内で運用可能）
-  - 手動更新スクリプト (`sync-opencritic-to-supabase.ts`) 実装済み
-  - **現在**: レイアウト調整などの開発継続中
+  - ハイブリッド同期の日次自動化（Edge Functions + Cron）
+  - 手動更新スクリプト (`sync-hybrid-to-supabase.ts`) 実装済み
+  - **現在**: 運用体制構築準備中
 
 ### コードレビューのポイント
 

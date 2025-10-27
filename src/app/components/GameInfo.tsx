@@ -10,31 +10,10 @@ interface GameInfoProps {
 }
 
 /**
- * opencritic_statsから統計情報を抽出してフォーマット
- */
-function parseOpenCriticStats(stats: string | null) {
-  if (!stats) return null
-
-  // "Top Critic Score: XX%, XX% Recommended, Tier: XXX" の形式をパース
-  const scoreMatch = stats.match(/Top Critic Score: ([\d.]+)%/)
-  const recommendedMatch = stats.match(/([\d.]+)% Recommended/)
-  const tierMatch = stats.match(/Tier: (\w+)/)
-
-  if (!scoreMatch && !recommendedMatch && !tierMatch) return null
-
-  return {
-    score: scoreMatch ? Math.round(parseFloat(scoreMatch[1])) : null,
-    recommended: recommendedMatch ? Math.round(parseFloat(recommendedMatch[1])) : null,
-    tier: tierMatch ? tierMatch[1] : null,
-  }
-}
-
-/**
  * ゲーム基本情報コンポーネント
  * スコア、プラットフォーム、配信状況などを表示
  */
 export default function GameInfo({ game, isLive = false }: GameInfoProps) {
-  const stats = parseOpenCriticStats(game.opencritic_stats)
   return (
     <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
       <div className="flex flex-col md:flex-row gap-6">
@@ -45,8 +24,8 @@ export default function GameInfo({ game, isLive = false }: GameInfoProps) {
               src={game.thumbnail_url}
               alt={game.title_ja || game.title_en}
               width={256}
-              height={256}
-              className="rounded-lg w-full h-auto"
+              height={384}
+              className="rounded-lg w-full h-auto object-cover"
               priority
             />
           </div>
@@ -57,7 +36,7 @@ export default function GameInfo({ game, isLive = false }: GameInfoProps) {
           {/* タイトルとライブバッジ */}
           <div className="flex items-start gap-3 mb-4">
             <h1 className="text-3xl font-bold text-text-primary flex-1">
-              {game.title_ja}
+              {game.title_ja || game.title_en}
             </h1>
             {isLive && (
               <div className="flex items-center gap-2 px-3 py-1 bg-danger/20 border border-danger rounded-full">
@@ -68,47 +47,77 @@ export default function GameInfo({ game, isLive = false }: GameInfoProps) {
           </div>
 
           {/* 英語タイトル */}
-          {game.title_en && (
+          {game.title_en && game.title_ja && (
             <p className="text-lg text-text-secondary mb-4">{game.title_en}</p>
           )}
 
-          {/* スコアとプラットフォーム */}
+          {/* スコア、プラットフォーム、ジャンル */}
           <div className="flex flex-wrap items-center gap-4 mb-6">
-            <ScoreBadge score={game.metascore} size="lg" />
+            {game.metascore && <ScoreBadge score={game.metascore} size="lg" />}
 
-            <div className="flex flex-wrap gap-2">
-              {game.platforms?.map((platform) => (
-                <span
-                  key={platform}
-                  className="px-3 py-1 bg-gray-700/50 rounded text-sm"
-                >
-                  {platform}
-                </span>
-              ))}
-            </div>
+            {/* プラットフォーム */}
+            {game.platforms && game.platforms.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {game.platforms.slice(0, 4).map((platform) => (
+                  <span
+                    key={platform}
+                    className="px-3 py-1 bg-gray-700/50 rounded text-sm"
+                  >
+                    {platform}
+                  </span>
+                ))}
+                {game.platforms.length > 4 && (
+                  <span className="px-3 py-1 bg-gray-700/50 rounded text-sm text-text-secondary">
+                    +{game.platforms.length - 4}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* 統計情報 */}
-          {stats && (
-            <div className="mb-6 grid grid-cols-3 gap-4">
-              {stats.score !== null && (
-                <div className="bg-gray-700/30 rounded-lg p-3">
-                  <p className="text-xs text-text-secondary mb-1">評価スコア</p>
-                  <p className="text-2xl font-bold text-accent">{stats.score}%</p>
-                </div>
-              )}
-              {stats.recommended !== null && (
-                <div className="bg-gray-700/30 rounded-lg p-3">
-                  <p className="text-xs text-text-secondary mb-1">推奨度</p>
-                  <p className="text-2xl font-bold text-success">{stats.recommended}%</p>
-                </div>
-              )}
-              {stats.tier && (
-                <div className="bg-gray-700/30 rounded-lg p-3">
-                  <p className="text-xs text-text-secondary mb-1">ランク</p>
-                  <p className="text-xl font-bold text-text-primary">{stats.tier}</p>
-                </div>
-              )}
+          {/* ジャンル */}
+          {game.genres && game.genres.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-text-secondary mb-2">ジャンル</p>
+              <div className="flex flex-wrap gap-2">
+                {game.genres.map((genre) => (
+                  <span
+                    key={genre}
+                    className="px-2 py-1 bg-accent/20 border border-accent/30 rounded text-sm text-accent"
+                  >
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 統計情報グリッド */}
+          <div className="mb-6 grid grid-cols-2 gap-4">
+            {/* メタスコア */}
+            {game.metascore && (
+              <div className="bg-gray-700/30 rounded-lg p-3">
+                <p className="text-xs text-text-secondary mb-1">メタスコア</p>
+                <p className="text-2xl font-bold text-accent">{game.metascore}</p>
+              </div>
+            )}
+
+            {/* レビュー数 */}
+            {game.review_count && (
+              <div className="bg-gray-700/30 rounded-lg p-3">
+                <p className="text-xs text-text-secondary mb-1">レビュー数</p>
+                <p className="text-2xl font-bold text-text-primary">{game.review_count}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 説明文 */}
+          {game.description_en && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-text-secondary mb-2">ゲーム説明</h3>
+              <p className="text-sm text-text-primary leading-relaxed line-clamp-6">
+                {game.description_en}
+              </p>
             </div>
           )}
 
