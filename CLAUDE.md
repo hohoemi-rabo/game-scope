@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **React 19**
 - **TypeScript** (strict mode)
 - **Tailwind CSS 3.4.17** (カスタムカラーシステム)
-- **Supabase** (Database, Edge Functions, Scheduler) - MCP Server統合
+- **Supabase** (Database, Edge Functions, Scheduler) - MCP Server統合（プロジェクトローカル設定）
 - **SWR** (クライアント側データフェッチング)
 - **use-debounce** (検索入力のデバウンス)
 - **rss-parser** (RSSフィード解析)
@@ -46,6 +46,9 @@ npm run supabase:types
 
 # 初期データ投入 (開発環境)
 npm run seed
+
+# OpenCritic数値ID更新 (既存データ更新用)
+npm run update:opencritic
 ```
 
 開発サーバーは http://localhost:3000 で起動します。
@@ -63,7 +66,7 @@ src/
 │   ├── error.tsx                 # エラー境界 ✅
 │   ├── globals.css               # グローバルスタイル ✅
 │   ├── game/[id]/                # ゲーム詳細
-│   │   ├── page.tsx              # ゲーム詳細ページ ✅
+│   │   ├── page.tsx              # ゲーム詳細ページ (OpenCriticリンク修正済) ✅
 │   │   └── not-found.tsx         # 404ページ ✅
 │   ├── search/
 │   │   └── page.tsx              # 検索ページ ✅
@@ -89,7 +92,7 @@ src/
 │       ├── FilterPanel.tsx       # フィルターパネル ✅
 │       ├── NewsCard.tsx          # ニュースカード ✅
 │       ├── BackButton.tsx        # 戻るボタン ✅
-│       ├── GameInfo.tsx          # ゲーム情報 (LIVEバッジ対応) ✅
+│       ├── GameInfo.tsx          # ゲーム情報 (OpenCriticリンク対応) ✅
 │       ├── TwitchLivePlayer.tsx  # Twitch プレイヤー埋め込み ✅
 │       ├── TwitchStreamList.tsx  # ライブ配信一覧 ✅
 │       ├── TwitchClipGallery.tsx # クリップギャラリー ✅
@@ -99,12 +102,13 @@ src/
 │   ├── supabase/
 │   │   ├── server.ts             # Server Components 用クライアント ✅
 │   │   ├── client.ts             # Client Components 用クライアント ✅
-│   │   ├── types.ts              # データベース型定義 (手動更新) ✅
+│   │   ├── types.ts              # データベース型定義 (opencritic_numeric_id追加) ✅
 │   │   └── search.ts             # 検索ロジック ✅
 │   ├── api/
 │   │   ├── rss.ts                # RSS フィード取得 ✅
 │   │   ├── twitch.ts             # Twitch API クライアント ✅
-│   │   └── game-twitch.ts        # Twitch x Game統合ロジック ✅
+│   │   ├── game-twitch.ts        # Twitch x Game統合ロジック ✅
+│   │   └── opencritic.ts         # OpenCritic API クライアント ✅
 │   └── hooks/
 │       └── useTwitchPlayer.ts    # Twitch Player SDK フック ✅
 │
@@ -113,11 +117,14 @@ supabase/                         # Supabase プロジェクト設定
 └── functions/                    # Edge Functions (Phase 3)
 
 scripts/
-└── seed-data.ts                  # 初期データ投入スクリプト ✅
+├── seed-data.ts                  # 初期データ投入スクリプト ✅
+└── update-opencritic-ids.ts      # OpenCritic数値ID更新スクリプト ✅
 
 docs/                             # 開発ドキュメント
 ├── tickets/                      # 機能別開発チケット ✅
 └── troubleshooting/              # エラー解決記録
+
+.mcp.json                         # プロジェクトローカルMCP設定 (gitignore済)
 ```
 
 ### データフロー
@@ -139,6 +146,7 @@ docs/                             # 開発ドキュメント
 - **Strict Mode**: 有効化されているため型安全性が重要
 - **Module Resolution**: `bundler` (Next.js 15対応)
 - **JSX**: `preserve` (Next.js がトランスパイル)
+- **Exclude**: `scripts/` ディレクトリは型チェック対象外（ビルド時エラー回避）
 
 ## デザインシステム
 
@@ -177,9 +185,9 @@ docs/                             # 開発ドキュメント
    - タイトル (日本語/英語)
    - プラットフォーム、メタスコア、レビュー数
    - **opencritic_id** (TEXT): OpenCriticのURLスラッグ（例: `"elden-ring"`, `"baldurs-gate-3"`）
-     - **重要**: 数値IDではなくスラッグ形式で保存されている
+   - **opencritic_numeric_id** (INTEGER): OpenCriticの数値ID（例: 12090, 9136） ✅
      - OpenCritic URLの構築: `https://opencritic.com/game/{numeric_id}/{slug}`
-     - 現状の問題: 数値IDが不明なため、スラッグのみでのリンクは404になる
+     - 全20ゲームのデータが手動で収集・投入済み
    - **twitch_game_id** (TEXT): Twitch Game ID（自動キャッシュ、1週間有効）
    - **twitch_last_checked_at** (TIMESTAMPTZ): Twitch ID最終確認日時
 
@@ -194,17 +202,22 @@ docs/                             # 開発ドキュメント
 4. **operation_logs** - 操作ログ
    - 自動更新の実行記録、エラートラッキング
 
-### OpenCritic ID の扱いに関する注意事項
+### OpenCritic 数値ID対応 (Phase 2.5完了)
 
-**現在の課題**:
-- `opencritic_id` カラムにはスラッグ（例: `"elden-ring"`）のみが保存されている
-- OpenCriticの正しいURL形式は `https://opencritic.com/game/{numeric_id}/{slug}` （例: `https://opencritic.com/game/12090/elden-ring`）
-- スラッグのみのURL（`https://opencritic.com/game/elden-ring`）は404エラーになる
+**実装内容** ✅:
+1. `opencritic_numeric_id` カラムをgamesテーブルに追加（マイグレーション実行済）
+2. 全20ゲームの数値IDを手動収集してデータベース更新完了
+3. `GameInfo.tsx` コンポーネントで正しいURL形式に修正
+4. OpenCritic APIクライアント (`lib/api/opencritic.ts`) 作成済（将来の自動更新用）
 
-**解決策の選択肢**:
-1. **数値IDを追加取得**: OpenCritic APIまたはスクレイピングで数値IDを取得（Phase 3以降）
-2. **外部リンクを修正**: 当面はスラッグのみでアクセス可能な別の方法を検討
-3. **データ移行**: 既存データに数値IDを追加するマイグレーション実行
+**URL形式**:
+- 正しい形式: `https://opencritic.com/game/{numeric_id}/{slug}`
+- 例: `https://opencritic.com/game/12090/elden-ring`
+
+**データ例**:
+- Elden Ring: numeric_id = 12090, slug = "elden-ring"
+- Baldur's Gate 3: numeric_id = 9136, slug = "baldurs-gate-3"
+- Zelda TOTK: numeric_id = 14343, slug = "zelda-totk"
 
 ## 主要機能の実装パターン
 
@@ -334,11 +347,13 @@ Phase 1とPhase 2は完了済み。Phase 3（運用自動化）が次のステ�
 - `08_検索機能実装.md` - リアルタイム検索、フィルター ✅
 - `09_ニュース一覧実装.md` - RSSフィード取得、一覧表示 ✅
 
-**Phase 2.5 (Twitch連携):** ✅ 完了
+**Phase 2.5 (Twitch連携 + OpenCritic修正):** ✅ 完了
 - `11_Twitch_API基本実装.md` - OAuth認証、トークン管理、基本API ✅
 - `12_Twitch配信情報取得機能.md` - ライブ配信・クリップ取得、API Routes ✅
 - `13_Twitch埋め込みコンポーネント実装.md` - UIコンポーネント、プレイヤー埋め込み ✅
 - `14_ゲーム詳細ページTwitch統合.md` - 既存ページへの統合、タブUI ✅
+- OpenCritic数値ID対応 - マイグレーション、データ更新、UI修正 ✅
+- Supabase MCP プロジェクトローカル設定 ✅
 
 **Phase 3 (運用自動化):** 保留中
 - `10_自動更新システム.md` - Edge Functions、Cron Jobs
@@ -641,12 +656,24 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
 
 ## Supabase MCP Server の活用
 
-プロジェクトには Supabase MCP Server が統合されており、以下の操作が可能:
+プロジェクトには Supabase MCP Server が**プロジェクトローカル設定**で統合されています:
+
+### MCP設定ファイル
+- **場所**: プロジェクトルートに `.mcp.json` を配置
+- **セキュリティ**: `.gitignore` で追跡対象外（Service Role Keyを含むため）
+- **用途**: 無料枠管理のため、プロジェクトごとに異なるSupabaseアカウントを使用
+
+### 利用可能な操作
 - データベースマイグレーション実行
 - SQL クエリ実行
 - テーブル・拡張機能の一覧取得
 - Edge Functions のデプロイ
 - ログ取得とアドバイザー実行
+
+### 注意事項
+- `.mcp.json` ファイルは**絶対にコミットしない**（機密情報を含む）
+- Claude Code 再起動後に設定が反映される
+- プロジェクト固有のSupabase接続情報を使用
 
 ## 開発ワークフロー
 
@@ -671,12 +698,14 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - 検索機能（debounce、プラットフォームフィルター、スコアフィルター）
   - ニュース一覧（10RSSソースから取得、ニュースサイト・キーワードフィルター）
 
-- ✅ **Phase 2.5 (Twitch連携)**: 完了
+- ✅ **Phase 2.5 (Twitch連携 + OpenCritic修正)**: 完了
   - Twitch API基本実装（OAuth、トークン管理）
   - 配信情報取得機能（ライブ配信・クリップ）
   - 埋め込みコンポーネント（プレイヤー、ギャラリー）
   - ゲーム詳細ページ統合
   - Twitch Game ID キャッシュ機構（1週間）
+  - **OpenCritic数値ID対応**（全20ゲーム更新完了）
+  - **プロジェクトローカルSupabase MCP設定**
 
 - ⏸️ **Phase 3 (運用自動化)**: 保留中
   - 自動更新システム（Edge Functions、Cron Jobs）
