@@ -44,14 +44,16 @@ npm run lint
 # Supabase 型定義の生成 (データベーススキーマから自動生成)
 npm run supabase:types
 
-# 初期データ投入 (開発環境)
-npm run seed
-
-# OpenCritic数値ID更新 (既存データ更新用)
-npm run update:opencritic
+# OpenCriticトップ20をSupabaseに同期（既存データを置き換え）
+npm run sync:opencritic
 ```
 
 開発サーバーは http://localhost:3000 で起動します。
+
+**重要な開発用スクリプト** (`scripts/` ディレクトリ):
+- `sync-opencritic-to-supabase.ts` - OpenCriticデータ同期（本番使用）
+- `check-twitch-game-names.ts` - Twitchゲーム名確認
+- `test-twitch-fallback.ts` - Twitchフォールバック検索テスト
 
 ## アーキテクチャ構造
 
@@ -72,8 +74,6 @@ src/
 │   │   └── page.tsx              # 検索ページ ✅
 │   ├── news/
 │   │   └── page.tsx              # ニュース一覧ページ ✅
-│   ├── test-opencritic/
-│   │   └── page.tsx              # OpenCritic API テストページ ✅
 │   ├── api/                      # API Routes
 │   │   ├── news/
 │   │   │   └── route.ts          # ニュース取得API ✅
@@ -189,9 +189,12 @@ docs/                             # 開発ドキュメント
    - タイトル (日本語/英語)
    - プラットフォーム、メタスコア、レビュー数
    - **opencritic_id** (TEXT): OpenCriticのURLスラッグ（例: `"elden-ring"`, `"baldurs-gate-3"`）
-   - **opencritic_numeric_id** (INTEGER): OpenCriticの数値ID（例: 12090, 9136） ✅
+   - **opencritic_numeric_id** (INTEGER): OpenCriticの数値ID（例: 12090, 9136）
      - OpenCritic URLの構築: `https://opencritic.com/game/{numeric_id}/{slug}`
-     - 全20ゲームのデータが手動で収集・投入済み
+     - 全20ゲームがOpenCriticトップ20から自動同期
+   - **opencritic_stats** (TEXT): OpenCritic統計情報（スコア、推奨度、ランク）
+     - 形式: "Top Critic Score: XX%, XX% Recommended, Tier: Mighty"
+     - 詳細ページで整形表示（評価スコア、推奨度、ランクの3つのカード）
    - **twitch_game_id** (TEXT): Twitch Game ID（自動キャッシュ、1週間有効）
    - **twitch_last_checked_at** (TIMESTAMPTZ): Twitch ID最終確認日時
 
@@ -320,6 +323,13 @@ Client (SWR) - ニュース一覧ページ
 - ライブ配信情報: API キャッシュ 5分
 - クリップ情報: API キャッシュ 1時間
 
+**Twitchゲーム名検索のフォールバック処理**:
+ゲームタイトルの表記ゆれに対応するため、複数のパターンで検索を試行：
+1. 元のタイトル（例: "Red Dead Redemption 2"）
+2. 数字前のスペース削除（例: "Red Dead Redemption2"）
+3. ローマ数字変換（例: "Red Dead Redemption II"）
+4. "Remastered"削除（該当する場合）
+
 ## 開発時の注意事項
 
 ### MVP段階での優先事項
@@ -394,7 +404,10 @@ Phase 1とPhase 2は完了済み。Phase 3（運用自動化）が次のステ�
 - テストページ実装 (`/test-opencritic`) ✅
 - Supabase MCP プロジェクトローカル設定 ✅
 - **OpenCriticトップ20への完全置き換え** - `sync-opencritic-to-supabase.ts` スクリプト実装、全20件同期完了 ✅
-- `description` カラム追加（ゲーム説明用） ✅
+- **`opencritic_stats` カラム追加**（OpenCritic統計情報用、`description`から改名） ✅
+- **Twitchゲーム名フォールバック検索** - タイトル表記ゆれに自動対応 ✅
+- **FilterPanel修正** - プラットフォーム名とDB値のマッピング対応 ✅
+- **GameCard画像調整** - `object-cover` + `scale-90` で画像表示改善 ✅
 
 **Phase 3 (運用自動化):** 🔜 デプロイ前に実装予定
 - `10_自動更新システム.md` - Edge Functions、Cron Jobs
@@ -747,12 +760,14 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - 埋め込みコンポーネント（プレイヤー、ギャラリー）
   - ゲーム詳細ページ統合
   - Twitch Game ID キャッシュ機構（1週間）
+  - **Twitchゲーム名フォールバック検索**（タイトル表記ゆれ対応）
   - **OpenCritic数値ID対応**（全20ゲーム更新完了）
   - **OpenCritic API `/game` エンドポイント発見・テスト完了**
   - **プロジェクトローカルSupabase MCP設定**
-  - **テストページ実装** (`/test-opencritic`)
   - **OpenCriticトップ20への完全置き換え**（データベース全件更新完了、画像18/20件表示）
-  - **`description`カラム追加**（ゲーム説明フィールド）
+  - **`opencritic_stats`カラム追加**（統計情報の整形表示）
+  - **FilterPanel修正**（プラットフォーム名マッピング）
+  - **GameCard画像調整**（`scale-90`で表示改善）
 
 - 🔜 **Phase 3 (運用自動化)**: デプロイ前に実装予定
   - OpenCritic `/game` エンドポイントを利用した日次自動更新

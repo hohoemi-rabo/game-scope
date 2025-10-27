@@ -10,10 +10,31 @@ interface GameInfoProps {
 }
 
 /**
+ * opencritic_statsから統計情報を抽出してフォーマット
+ */
+function parseOpenCriticStats(stats: string | null) {
+  if (!stats) return null
+
+  // "Top Critic Score: XX%, XX% Recommended, Tier: XXX" の形式をパース
+  const scoreMatch = stats.match(/Top Critic Score: ([\d.]+)%/)
+  const recommendedMatch = stats.match(/([\d.]+)% Recommended/)
+  const tierMatch = stats.match(/Tier: (\w+)/)
+
+  if (!scoreMatch && !recommendedMatch && !tierMatch) return null
+
+  return {
+    score: scoreMatch ? Math.round(parseFloat(scoreMatch[1])) : null,
+    recommended: recommendedMatch ? Math.round(parseFloat(recommendedMatch[1])) : null,
+    tier: tierMatch ? tierMatch[1] : null,
+  }
+}
+
+/**
  * ゲーム基本情報コンポーネント
  * スコア、プラットフォーム、配信状況などを表示
  */
 export default function GameInfo({ game, isLive = false }: GameInfoProps) {
+  const stats = parseOpenCriticStats(game.opencritic_stats)
   return (
     <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
       <div className="flex flex-col md:flex-row gap-6">
@@ -66,6 +87,30 @@ export default function GameInfo({ game, isLive = false }: GameInfoProps) {
               ))}
             </div>
           </div>
+
+          {/* 統計情報 */}
+          {stats && (
+            <div className="mb-6 grid grid-cols-3 gap-4">
+              {stats.score !== null && (
+                <div className="bg-gray-700/30 rounded-lg p-3">
+                  <p className="text-xs text-text-secondary mb-1">評価スコア</p>
+                  <p className="text-2xl font-bold text-accent">{stats.score}%</p>
+                </div>
+              )}
+              {stats.recommended !== null && (
+                <div className="bg-gray-700/30 rounded-lg p-3">
+                  <p className="text-xs text-text-secondary mb-1">推奨度</p>
+                  <p className="text-2xl font-bold text-success">{stats.recommended}%</p>
+                </div>
+              )}
+              {stats.tier && (
+                <div className="bg-gray-700/30 rounded-lg p-3">
+                  <p className="text-xs text-text-secondary mb-1">ランク</p>
+                  <p className="text-xl font-bold text-text-primary">{stats.tier}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* リンク */}
           {game.opencritic_id && game.opencritic_numeric_id && (

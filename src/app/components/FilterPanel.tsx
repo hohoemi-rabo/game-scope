@@ -3,7 +3,15 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 
-const PLATFORMS = ['PC', 'PlayStation 5', 'Xbox Series X', 'Nintendo Switch']
+// プラットフォームの表示名とデータベース値のマッピング
+const PLATFORMS = [
+  { label: 'PC', value: 'PC' },
+  { label: 'PlayStation 5', value: 'PS5' },
+  { label: 'PlayStation 4', value: 'PS4' },
+  { label: 'Xbox Series X|S', value: 'XBXS' },
+  { label: 'Xbox One', value: 'XB1' },
+  { label: 'Nintendo Switch', value: 'Switch' },
+]
 const SCORE_RANGES = [
   { label: '全て', min: 0, max: 100 },
   { label: '80点以上', min: 80, max: 100 },
@@ -52,10 +60,10 @@ export default function FilterPanel() {
     router.push(`/search?${params.toString()}`, { scroll: false })
   }
 
-  const handlePlatformToggle = (platform: string) => {
-    const newPlatforms = selectedPlatforms.includes(platform)
-      ? selectedPlatforms.filter((p) => p !== platform)
-      : [...selectedPlatforms, platform]
+  const handlePlatformToggle = (platformValue: string) => {
+    const newPlatforms = selectedPlatforms.includes(platformValue)
+      ? selectedPlatforms.filter((p) => p !== platformValue)
+      : [...selectedPlatforms, platformValue]
 
     setSelectedPlatforms(newPlatforms)
     updateFilters(newPlatforms, scoreRange.min, scoreRange.max)
@@ -78,16 +86,16 @@ export default function FilterPanel() {
         <div className="space-y-2">
           {PLATFORMS.map((platform) => (
             <label
-              key={platform}
+              key={platform.value}
               className="flex items-center gap-2 cursor-pointer"
             >
               <input
                 type="checkbox"
-                checked={selectedPlatforms.includes(platform)}
-                onChange={() => handlePlatformToggle(platform)}
+                checked={selectedPlatforms.includes(platform.value)}
+                onChange={() => handlePlatformToggle(platform.value)}
                 className="w-4 h-4 accent-accent"
               />
-              <span className="text-text-primary">{platform}</span>
+              <span className="text-text-primary">{platform.label}</span>
             </label>
           ))}
         </div>

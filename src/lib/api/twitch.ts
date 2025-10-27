@@ -93,24 +93,63 @@ export async function fetchTwitchAPI<T>(
 }
 
 /**
- * ゲーム名からTwitch Game IDを取得
+ * Twitchでゲーム名を検索するヘルパー関数
  */
-export async function getTwitchGameId(gameName: string): Promise<string | null> {
+async function searchTwitchGame(gameName: string): Promise<string | null> {
   try {
     const data = await fetchTwitchAPI<{
       data: Array<{ id: string; name: string }>
     }>(`/games?name=${encodeURIComponent(gameName)}`)
 
-    if (data.data.length === 0) {
-      console.warn(`Twitch game not found: ${gameName}`)
-      return null
+    if (data.data.length > 0) {
+      return data.data[0].id
     }
-
-    return data.data[0].id
-  } catch (error) {
-    console.error('Failed to get Twitch game ID:', error)
+    return null
+  } catch {
     return null
   }
+}
+
+/**
+ * ゲーム名からTwitchのGame IDを取得
+ * 表記ゆれに対応するため、複数のパターンで検索を試みる
+ */
+export async function getTwitchGameId(gameName: string): Promise<string | null> {
+  // 1. 元のタイトルで検索
+  let result = await searchTwitchGame(gameName)
+  if (result) return result
+
+  // 2. 数字の前のスペースを削除して検索（例: "Game 2" → "Game2"）
+  const noSpaceBeforeNumber = gameName.replace(/\s+(\d+)$/, '$1')
+  if (noSpaceBeforeNumber !== gameName) {
+    result = await searchTwitchGame(noSpaceBeforeNumber)
+    if (result) return result
+  }
+
+  // 3. 末尾の数字をローマ数字に変換して検索（例: "Game 2" → "Game II"）
+  const romanNumerals: { [key: string]: string } = {
+    ' 2': ' II',
+    ' 3': ' III',
+    ' 4': ' IV',
+    ' 5': ' V',
+  }
+  for (const [arabic, roman] of Object.entries(romanNumerals)) {
+    if (gameName.endsWith(arabic)) {
+      const romanVersion = gameName.slice(0, -arabic.length) + roman
+      result = await searchTwitchGame(romanVersion)
+      if (result) return result
+    }
+  }
+
+  // 4. "Remastered" を削除して検索
+  if (gameName.includes(' Remastered')) {
+    const withoutRemastered = gameName.replace(' Remastered', '')
+    result = await searchTwitchGame(withoutRemastered)
+    if (result) return result
+  }
+
+  console.warn(`Twitch game not found after fallback attempts: ${gameName}`)
+  return null
 }
 
 /**

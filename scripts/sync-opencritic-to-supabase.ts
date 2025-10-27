@@ -142,7 +142,7 @@ async function syncToSupabase() {
         review_count: ocGame.numReviews,
         thumbnail_url: thumbnailUrl,
         release_date: ocGame.firstReleaseDate || null,
-        description: `Top Critic Score: ${ocGame.topCriticScore}%, ${ocGame.percentRecommended}% Recommended, Tier: ${ocGame.tier}`,
+        opencritic_stats: `Top Critic Score: ${ocGame.topCriticScore}%, ${ocGame.percentRecommended}% Recommended, Tier: ${ocGame.tier}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
