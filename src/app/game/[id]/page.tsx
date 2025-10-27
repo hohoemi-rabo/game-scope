@@ -1,10 +1,12 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { getGame } from '@/lib/supabase/server'
+import { createServerClient } from '@/lib/supabase/server'
+import { getGameTwitchId, hasLiveStreams } from '@/lib/api/game-twitch'
 import Container from '@/app/components/Container'
 import BackButton from '@/app/components/BackButton'
-import GameDetailHeader from '@/app/components/GameDetailHeader'
 import GameInfo from '@/app/components/GameInfo'
-import ExternalLinks from '@/app/components/ExternalLinks'
+import TwitchSection from '@/app/components/TwitchSection'
+import LoadingSpinner from '@/app/components/LoadingSpinner'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -14,9 +16,21 @@ interface PageProps {
 // 動的メタデータの生成
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
+  const supabase = createServerClient()
 
   try {
-    const game = await getGame(id)
+    const { data: game } = await supabase
+      .from('games')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (!game) {
+      return {
+        title: 'ゲームが見つかりません',
+      }
+    }
+
     const title = game.title_ja || game.title_en
 
     return {
@@ -32,71 +46,56 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 /**
  * ゲーム詳細ページ
- * 動的ルーティングでゲームIDに基づいて情報を表示
- *
- * 機能:
- * - ゲーム詳細情報の表示
- * - スコアバッジの表示
- * - 外部リンク (OpenCritic, Steam)
- * - 動的メタデータ生成
+ * Twitch統合版
  */
 export default async function GameDetailPage({ params }: PageProps) {
   const { id } = await params
+  const supabase = createServerClient()
 
-  // ゲーム情報を取得
-  let game
-  try {
-    game = await getGame(id)
-  } catch (error) {
+  // ゲーム基本情報を取得
+  const { data: game, error } = await supabase
+    .from('games')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error || !game) {
     console.error(`Game ${id} not found:`, error)
-    notFound() // 404ページに遷移
+    notFound()
   }
 
-  const displayTitle = game.title_ja || game.title_en
+  // Twitch Game ID を取得（サーバーサイド、キャッシュ優先）
+  const twitchGameId = await getGameTwitchId(id)
+
+  // ライブ配信の有無を確認
+  const isLive = twitchGameId ? await hasLiveStreams(twitchGameId) : false
 
   return (
     <Container className="py-8">
       {/* 戻るボタン */}
       <BackButton />
 
-      {/* ヘッダー（タイトル、スコア） */}
-      <GameDetailHeader
-        title={displayTitle}
-        metascore={game.metascore}
-        platforms={game.platforms || []}
-        thumbnailUrl={game.thumbnail_url}
-      />
+      {/* ゲーム基本情報 */}
+      <GameInfo game={game} isLive={isLive} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-        {/* メイン情報 */}
-        <div className="lg:col-span-2">
-          <GameInfo
-            releaseDate={game.release_date}
-            reviewCount={game.review_count}
-            titleEn={game.title_en}
-          />
-
-          {/* Twitch 情報（Phase 1では静的表示） */}
-          {game.twitch_links && game.twitch_links.length > 0 && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4">配信情報</h2>
-              <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                <p className="text-text-secondary">
-                  Twitch での配信情報は Phase 2 で実装予定
-                </p>
+      {/* Twitch セクション（配信がある場合のみ） */}
+      {twitchGameId && (
+        <Suspense
+          fallback={
+            <div className="mt-8 p-8 bg-gray-800/50 rounded-lg">
+              <div className="flex justify-center">
+                <LoadingSpinner size="md" />
               </div>
             </div>
-          )}
-        </div>
-
-        {/* サイドバー */}
-        <div className="lg:col-span-1">
-          <ExternalLinks
-            opencriticId={game.opencritic_id}
-            titleEn={game.title_en}
+          }
+        >
+          <TwitchSection
+            gameId={id}
+            twitchGameId={twitchGameId}
+            gameName={game.title_ja || game.title_en}
           />
-        </div>
-      </div>
+        </Suspense>
+      )}
     </Container>
   )
 }

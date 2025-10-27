@@ -1,47 +1,87 @@
+import Image from 'next/image'
+import ScoreBadge from './ScoreBadge'
+import type { Database } from '@/lib/supabase/types'
+
+type Game = Database['public']['Tables']['games']['Row']
+
 interface GameInfoProps {
-  releaseDate: string | null
-  reviewCount: number | null
-  titleEn: string
+  game: Game
+  isLive?: boolean
 }
 
 /**
- * ゲーム情報コンポーネント
- * 発売日、レビュー数、英語タイトルを表示
+ * ゲーム基本情報コンポーネント
+ * スコア、プラットフォーム、配信状況などを表示
  */
-export default function GameInfo({ releaseDate, reviewCount, titleEn }: GameInfoProps) {
-  // 日付のフォーマット
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '未定'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
-
+export default function GameInfo({ game, isLive = false }: GameInfoProps) {
   return (
     <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-      <h2 className="text-2xl font-bold mb-4">ゲーム情報</h2>
-
-      <dl className="space-y-4">
-        <div>
-          <dt className="text-text-secondary text-sm mb-1">発売日</dt>
-          <dd className="text-text-primary">{formatDate(releaseDate)}</dd>
-        </div>
-
-        {reviewCount !== null && (
-          <div>
-            <dt className="text-text-secondary text-sm mb-1">レビュー数</dt>
-            <dd className="text-text-primary">{reviewCount} 件</dd>
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* ゲーム画像 */}
+        {game.thumbnail_url && (
+          <div className="w-full md:w-64 flex-shrink-0">
+            <Image
+              src={game.thumbnail_url}
+              alt={game.title_ja || game.title_en}
+              width={256}
+              height={256}
+              className="rounded-lg w-full h-auto"
+              priority
+            />
           </div>
         )}
 
-        <div>
-          <dt className="text-text-secondary text-sm mb-1">英語タイトル</dt>
-          <dd className="text-text-primary">{titleEn}</dd>
+        {/* ゲーム情報 */}
+        <div className="flex-1">
+          {/* タイトルとライブバッジ */}
+          <div className="flex items-start gap-3 mb-4">
+            <h1 className="text-3xl font-bold text-text-primary flex-1">
+              {game.title_ja}
+            </h1>
+            {isLive && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-danger/20 border border-danger rounded-full">
+                <div className="w-2 h-2 bg-danger rounded-full animate-pulse" />
+                <span className="text-sm font-semibold text-danger">LIVE</span>
+              </div>
+            )}
+          </div>
+
+          {/* 英語タイトル */}
+          {game.title_en && (
+            <p className="text-lg text-text-secondary mb-4">{game.title_en}</p>
+          )}
+
+          {/* スコアとプラットフォーム */}
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <ScoreBadge score={game.metascore} size="lg" />
+
+            <div className="flex flex-wrap gap-2">
+              {game.platforms?.map((platform) => (
+                <span
+                  key={platform}
+                  className="px-3 py-1 bg-gray-700/50 rounded text-sm"
+                >
+                  {platform}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* リンク */}
+          {game.opencritic_id && (
+            <div className="mt-6">
+              <a
+                href={`https://opencritic.com/game/${game.opencritic_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                OpenCritic で詳細を見る →
+              </a>
+            </div>
+          )}
         </div>
-      </dl>
+      </div>
     </div>
   )
 }
