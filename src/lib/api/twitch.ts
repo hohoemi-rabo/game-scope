@@ -112,3 +112,103 @@ export async function getTwitchGameId(gameName: string): Promise<string | null> 
     return null
   }
 }
+
+/**
+ * ゲームIDからライブ配信情報を取得
+ * 視聴者数が多い順に返す
+ */
+export async function getStreams(
+  gameId: string,
+  limit: number = 10
+): Promise<TwitchStream[]> {
+  try {
+    const data = await fetchTwitchAPI<{
+      data: TwitchStream[]
+      pagination?: { cursor?: string }
+    }>(`/streams?game_id=${gameId}&first=${limit}`)
+
+    return data.data
+  } catch (error) {
+    console.error('Failed to get Twitch streams:', error)
+    return []
+  }
+}
+
+/**
+ * ゲームIDから人気クリップを取得
+ * デフォルトは過去7日間、再生数順
+ */
+export async function getClips(
+  gameId: string,
+  limit: number = 10,
+  days: number = 7
+): Promise<TwitchClip[]> {
+  const startedAt = new Date()
+  startedAt.setDate(startedAt.getDate() - days)
+
+  try {
+    const data = await fetchTwitchAPI<{
+      data: TwitchClip[]
+      pagination?: { cursor?: string }
+    }>(
+      `/clips?game_id=${gameId}&first=${limit}&started_at=${startedAt.toISOString()}`
+    )
+
+    return data.data
+  } catch (error) {
+    console.error('Failed to get Twitch clips:', error)
+    return []
+  }
+}
+
+/**
+ * 複数のゲーム名からTwitch情報を一括取得
+ * 英語タイトルがTwitchに存在するか確認
+ */
+export async function getGameInfo(
+  gameTitles: string[]
+): Promise<Map<string, string | null>> {
+  const gameIdMap = new Map<string, string | null>()
+
+  for (const title of gameTitles) {
+    const gameId = await getTwitchGameId(title)
+    gameIdMap.set(title, gameId)
+  }
+
+  return gameIdMap
+}
+
+// 型定義
+export interface TwitchStream {
+  id: string
+  user_id: string
+  user_login: string
+  user_name: string
+  game_id: string
+  game_name: string
+  type: 'live'
+  title: string
+  viewer_count: number
+  started_at: string
+  language: string
+  thumbnail_url: string
+  tag_ids: string[]
+}
+
+export interface TwitchClip {
+  id: string
+  url: string
+  embed_url: string
+  broadcaster_id: string
+  broadcaster_name: string
+  creator_id: string
+  creator_name: string
+  video_id: string
+  game_id: string
+  language: string
+  title: string
+  view_count: number
+  created_at: string
+  thumbnail_url: string
+  duration: number
+}
