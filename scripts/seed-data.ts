@@ -15,8 +15,9 @@ const supabase = createClient<Database>(
  * 初期ゲームデータ
  * OpenCritic の高評価ゲームから抽出
  * サムネイル画像は Phase 2 で OpenCritic API から取得予定
+ * 注: opencritic_numeric_id は後で update-opencritic-ids.ts で更新される
  */
-const seedGames = [
+const seedGames: Database['public']['Tables']['games']['Insert'][] = [
   {
     title_ja: 'エルデンリング',
     title_en: 'Elden Ring',

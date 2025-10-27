@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { createServerClient } from '@/lib/supabase/server'
+import { getGame } from '@/lib/supabase/server'
 import { getGameTwitchId, hasLiveStreams } from '@/lib/api/game-twitch'
 import Container from '@/app/components/Container'
 import BackButton from '@/app/components/BackButton'
@@ -8,6 +8,9 @@ import GameInfo from '@/app/components/GameInfo'
 import TwitchSection from '@/app/components/TwitchSection'
 import LoadingSpinner from '@/app/components/LoadingSpinner'
 import type { Metadata } from 'next'
+import type { Database } from '@/lib/supabase/types'
+
+type Game = Database['public']['Tables']['games']['Row']
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -16,14 +19,9 @@ interface PageProps {
 // 動的メタデータの生成
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
-  const supabase = createServerClient()
 
   try {
-    const { data: game } = await supabase
-      .from('games')
-      .select('*')
-      .eq('id', id)
-      .single()
+    const game = (await getGame(id)) as Game
 
     if (!game) {
       return {
@@ -50,17 +48,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  */
 export default async function GameDetailPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = createServerClient()
 
   // ゲーム基本情報を取得
-  const { data: game, error } = await supabase
-    .from('games')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const game = (await getGame(id).catch(() => null)) as Game | null
 
-  if (error || !game) {
-    console.error(`Game ${id} not found:`, error)
+  if (!game) {
     notFound()
   }
 

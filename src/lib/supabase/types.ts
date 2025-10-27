@@ -20,6 +20,7 @@ export interface Database {
           release_date: string | null
           thumbnail_url: string | null
           opencritic_id: string | null
+          opencritic_numeric_id: number | null
           created_at: string | null
           updated_at: string | null
           twitch_game_id: string | null
@@ -35,6 +36,7 @@ export interface Database {
           release_date?: string | null
           thumbnail_url?: string | null
           opencritic_id?: string | null
+          opencritic_numeric_id?: number | null
           created_at?: string | null
           updated_at?: string | null
           twitch_game_id?: string | null
@@ -50,6 +52,7 @@ export interface Database {
           release_date?: string | null
           thumbnail_url?: string | null
           opencritic_id?: string | null
+          opencritic_numeric_id?: number | null
           created_at?: string | null
           updated_at?: string | null
           twitch_game_id?: string | null

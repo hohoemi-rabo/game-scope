@@ -1,5 +1,11 @@
 import { createServerClient } from '@/lib/supabase/server'
 import { getTwitchGameId } from './twitch'
+import type { Database } from '@/lib/supabase/types'
+
+type GameTwitchData = Pick<
+  Database['public']['Tables']['games']['Row'],
+  'twitch_game_id' | 'twitch_last_checked_at' | 'title_en'
+>
 
 /**
  * ゲームのTwitch Game IDを取得（キャッシュ優先）
@@ -10,11 +16,11 @@ export async function getGameTwitchId(gameId: string): Promise<string | null> {
   const supabase = createServerClient()
 
   // データベースからキャッシュを確認
-  const { data: game } = await supabase
+  const { data: game } = (await supabase
     .from('games')
     .select('twitch_game_id, twitch_last_checked_at, title_en')
     .eq('id', gameId)
-    .single()
+    .single()) as { data: GameTwitchData | null }
 
   if (!game) return null
 
@@ -40,7 +46,7 @@ export async function getGameTwitchId(gameId: string): Promise<string | null> {
       .update({
         twitch_game_id: twitchGameId,
         twitch_last_checked_at: new Date().toISOString(),
-      })
+      } as never)
       .eq('id', gameId)
   }
 

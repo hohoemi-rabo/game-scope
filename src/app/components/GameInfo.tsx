@@ -68,10 +68,10 @@ export default function GameInfo({ game, isLive = false }: GameInfoProps) {
           </div>
 
           {/* リンク */}
-          {game.opencritic_id && (
+          {game.opencritic_id && game.opencritic_numeric_id && (
             <div className="mt-6">
               <a
-                href={`https://opencritic.com/game/${game.opencritic_id}`}
+                href={`https://opencritic.com/game/${game.opencritic_numeric_id}/${game.opencritic_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"
