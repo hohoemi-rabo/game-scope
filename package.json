@@ -10,7 +10,8 @@
     "supabase:types": "npx supabase gen types typescript --project-id vhuhazlgqmuihejpiuyy > src/lib/supabase/types.ts",
     "seed": "tsx scripts/seed-data.ts",
     "seed:prod": "NODE_ENV=production tsx scripts/seed-data.ts",
-    "update:opencritic": "tsx scripts/update-opencritic-ids.ts"
+    "update:opencritic": "tsx scripts/update-opencritic-ids.ts",
+    "sync:opencritic": "tsx scripts/sync-opencritic-to-supabase.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",

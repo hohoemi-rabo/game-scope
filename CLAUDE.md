@@ -72,6 +72,8 @@ src/
 │   │   └── page.tsx              # 検索ページ ✅
 │   ├── news/
 │   │   └── page.tsx              # ニュース一覧ページ ✅
+│   ├── test-opencritic/
+│   │   └── page.tsx              # OpenCritic API テストページ ✅
 │   ├── api/                      # API Routes
 │   │   ├── news/
 │   │   │   └── route.ts          # ニュース取得API ✅
@@ -118,7 +120,9 @@ supabase/                         # Supabase プロジェクト設定
 
 scripts/
 ├── seed-data.ts                  # 初期データ投入スクリプト ✅
-└── update-opencritic-ids.ts      # OpenCritic数値ID更新スクリプト ✅
+├── update-opencritic-ids.ts      # OpenCritic数値ID更新スクリプト ✅
+├── test-opencritic-*.ts          # OpenCritic API テストスクリプト群 ✅
+└── check-game-data-fields.ts     # OpenCritic データ構造確認 ✅
 
 docs/                             # 開発ドキュメント
 ├── tickets/                      # 機能別開発チケット ✅
@@ -202,17 +206,50 @@ docs/                             # 開発ドキュメント
 4. **operation_logs** - 操作ログ
    - 自動更新の実行記録、エラートラッキング
 
-### OpenCritic 数値ID対応 (Phase 2.5完了)
+### OpenCritic API 統合 (Phase 2.5完了)
 
 **実装内容** ✅:
 1. `opencritic_numeric_id` カラムをgamesテーブルに追加（マイグレーション実行済）
 2. 全20ゲームの数値IDを手動収集してデータベース更新完了
 3. `GameInfo.tsx` コンポーネントで正しいURL形式に修正
-4. OpenCritic APIクライアント (`lib/api/opencritic.ts`) 作成済（将来の自動更新用）
+4. OpenCritic APIクライアント (`lib/api/opencritic.ts`) 作成済
+5. **`/game` エンドポイント発見** - 1リクエストで20件のゲームデータ取得可能 ✅
+6. テストページ (`/test-opencritic`) で動作確認完了 ✅
+
+**OpenCritic API 重要な発見**:
+
+**利用可能なエンドポイント**:
+- ✅ `/game` - トップ20ゲームの一覧（詳細情報含む）
+- ✅ `/outlet` - レビューサイト一覧
+- ❌ `/game/hall-of-fame`, `/game/popular` など - 404エラー（RapidAPI経由では利用不可）
+
+**`/game` エンドポイントのレスポンス**:
+```json
+{
+  "id": 4504,
+  "name": "Super Mario Odyssey",
+  "topCriticScore": 96.81,
+  "numReviews": 157,
+  "percentRecommended": 98.01,
+  "tier": "Mighty",
+  "Platforms": [...],
+  "images": { "box": { "og": "game/4504/o/..." } },
+  "Genres": [...],
+  "firstReleaseDate": "2017-10-27",
+  "url": "https://opencritic.com/game/4504/super-mario-odyssey"
+}
+```
+
+**重要**:
+- 1リクエストで20件取得可能（レート制限対策に有効）
+- 詳細情報（スコア、レビュー数、画像URL、OpenCriticリンク）がすべて含まれる
+- 画像URL: `https://img.opencritic.com/{images.box.og}` で取得
+- Next.jsの`next.config.ts`に`img.opencritic.com`の許可設定が必要
 
 **URL形式**:
 - 正しい形式: `https://opencritic.com/game/{numeric_id}/{slug}`
 - 例: `https://opencritic.com/game/12090/elden-ring`
+- APIレスポンスに完全なURLが含まれる（`url`フィールド）
 
 **データ例**:
 - Elden Ring: numeric_id = 12090, slug = "elden-ring"
@@ -353,10 +390,16 @@ Phase 1とPhase 2は完了済み。Phase 3（運用自動化）が次のステ�
 - `13_Twitch埋め込みコンポーネント実装.md` - UIコンポーネント、プレイヤー埋め込み ✅
 - `14_ゲーム詳細ページTwitch統合.md` - 既存ページへの統合、タブUI ✅
 - OpenCritic数値ID対応 - マイグレーション、データ更新、UI修正 ✅
+- OpenCritic API `/game` エンドポイント調査・テスト ✅
+- テストページ実装 (`/test-opencritic`) ✅
 - Supabase MCP プロジェクトローカル設定 ✅
+- **OpenCriticトップ20への完全置き換え** - `sync-opencritic-to-supabase.ts` スクリプト実装、全20件同期完了 ✅
+- `description` カラム追加（ゲーム説明用） ✅
 
-**Phase 3 (運用自動化):** 保留中
+**Phase 3 (運用自動化):** 🔜 デプロイ前に実装予定
 - `10_自動更新システム.md` - Edge Functions、Cron Jobs
+- OpenCritic `/game` エンドポイントを利用した日次自動更新
+- **現在**: レイアウト調整などの開発継続中
 
 ## 環境変数 (.env.local)
 
@@ -705,10 +748,17 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - ゲーム詳細ページ統合
   - Twitch Game ID キャッシュ機構（1週間）
   - **OpenCritic数値ID対応**（全20ゲーム更新完了）
+  - **OpenCritic API `/game` エンドポイント発見・テスト完了**
   - **プロジェクトローカルSupabase MCP設定**
+  - **テストページ実装** (`/test-opencritic`)
+  - **OpenCriticトップ20への完全置き換え**（データベース全件更新完了、画像18/20件表示）
+  - **`description`カラム追加**（ゲーム説明フィールド）
 
-- ⏸️ **Phase 3 (運用自動化)**: 保留中
-  - 自動更新システム（Edge Functions、Cron Jobs）
+- 🔜 **Phase 3 (運用自動化)**: デプロイ前に実装予定
+  - OpenCritic `/game` エンドポイントを利用した日次自動更新
+  - 1リクエスト/日で20件取得（月30リクエスト、無料枠100内で運用可能）
+  - 手動更新スクリプト (`sync-opencritic-to-supabase.ts`) 実装済み
+  - **現在**: レイアウト調整などの開発継続中
 
 ### コードレビューのポイント
 
