@@ -6,6 +6,26 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  safelist: [
+    // ニュースサイト用カラークラス
+    'bg-[#5865f2]', 'text-[#5865f2]', 'bg-[#5865f2]/20', 'bg-[#5865f2]/30', 'border-l-[#5865f2]',
+    'bg-[#9b59b6]', 'text-[#9b59b6]', 'bg-[#9b59b6]/20', 'bg-[#9b59b6]/30', 'border-l-[#9b59b6]',
+    'bg-[#e91e63]', 'text-[#e91e63]', 'bg-[#e91e63]/20', 'bg-[#e91e63]/30', 'border-l-[#e91e63]',
+    'bg-[#3498db]', 'text-[#3498db]', 'bg-[#3498db]/20', 'bg-[#3498db]/30', 'border-l-[#3498db]',
+    'bg-[#e74c3c]', 'text-[#e74c3c]', 'bg-[#e74c3c]/20', 'bg-[#e74c3c]/30', 'border-l-[#e74c3c]',
+    'bg-[#667eea]', 'text-[#667eea]', 'bg-[#667eea]/20', 'bg-[#667eea]/30', 'border-l-[#667eea]',
+    'bg-[#f59e0b]', 'text-[#f59e0b]', 'bg-[#f59e0b]/20', 'bg-[#f59e0b]/30', 'border-l-[#f59e0b]',
+    'bg-[#00c896]', 'text-[#00c896]', 'bg-[#00c896]/20', 'bg-[#00c896]/30', 'border-l-[#00c896]',
+    'bg-[#06b6d4]', 'text-[#06b6d4]', 'bg-[#06b6d4]/20', 'bg-[#06b6d4]/30', 'border-l-[#06b6d4]',
+    'bg-[#fbbf24]', 'text-[#fbbf24]', 'bg-[#fbbf24]/20', 'bg-[#fbbf24]/30', 'border-l-[#fbbf24]',
+    'border-l-accent', 'border-l-success', 'border-l-gray-700',
+    // ヘッダーグラデーション用
+    'from-[#5865f2]', 'via-[#9b59b6]', 'to-[#e91e63]',
+    'from-[#e91e63]', 'to-[#5865f2]',
+    'from-[#00c896]', 'to-[#06b6d4]',
+    'from-[#06b6d4]', 'to-[#00c896]',
+    'hover:border-[#06b6d4]/20', 'hover:border-[#f59e0b]/20',
+  ],
   theme: {
     extend: {
       colors: {

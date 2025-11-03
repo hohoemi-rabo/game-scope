@@ -1,8 +1,9 @@
+import { getPlatformBadgeColor, getPlatformBorderColor } from '@/lib/utils/platform-colors'
+
 interface NewsCardProps {
   title: string
   link: string
   pubDate: string
-  source: string
   platform: string
   description?: string
 }
@@ -15,7 +16,6 @@ export default function NewsCard({
   title,
   link,
   pubDate,
-  source,
   platform,
   description,
 }: NewsCardProps) {
@@ -30,8 +30,9 @@ export default function NewsCard({
   }
 
   return (
-    <article className="bg-gray-800/50 rounded-lg p-6 border border-gray-700
-                        hover:border-accent/50 transition-colors">
+    <article className={`bg-gray-800/50 rounded-lg p-6 border border-gray-700
+                        hover:border-accent/50 transition-colors
+                        border-l-4 ${getPlatformBorderColor(platform)}`}>
       {/* タイトル */}
       <h3 className="text-lg font-bold text-text-primary mb-2">
         <a
@@ -53,17 +54,10 @@ export default function NewsCard({
 
       {/* メタ情報 */}
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-3">
-          {/* プラットフォーム */}
-          <span className="px-2 py-1 bg-gray-700/50 rounded text-xs">
-            {platform}
-          </span>
-
-          {/* ソース */}
-          <span className="text-text-secondary text-xs">
-            {source}
-          </span>
-        </div>
+        {/* プラットフォーム */}
+        <span className={`px-2 py-1 rounded text-xs font-medium ${getPlatformBadgeColor(platform)}`}>
+          {platform}
+        </span>
 
         {/* 公開日 */}
         <time className="text-text-secondary text-xs">

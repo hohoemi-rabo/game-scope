@@ -6,6 +6,7 @@ import Container from '../components/Container'
 import NewsCard from '../components/NewsCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import type { NewsItem } from '@/lib/api/rss'
+import { getPlatformButtonColor } from '@/lib/utils/platform-colors'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
@@ -111,11 +112,8 @@ export default function NewsPage() {
               <button
                 key={platform}
                 onClick={() => setSelectedPlatform(platform)}
-                className={`px-4 py-2 rounded-lg transition-colors text-sm
-                  ${selectedPlatform === platform
-                    ? 'bg-accent text-white'
-                    : 'bg-gray-800 text-text-secondary hover:bg-gray-700'
-                  }`}
+                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium
+                  ${getPlatformButtonColor(platform, selectedPlatform === platform)}`}
               >
                 {platform}
               </button>

@@ -52,32 +52,55 @@ export default async function Header() {
       <Container>
         <div className="flex items-center justify-between h-16">
           {/* ロゴ */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="text-2xl font-bold">
-              <span className="text-accent">Game</span>
-              <span className="text-text-primary">Scope</span>
+          <Link href="/" className="flex items-center gap-2 group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">🎮</span>
+            <div className="text-2xl font-extrabold">
+              <span className="bg-gradient-to-r from-[#5865f2] via-[#9b59b6] to-[#e91e63]
+                             text-transparent bg-clip-text
+                             group-hover:from-[#e91e63] group-hover:via-[#9b59b6] group-hover:to-[#5865f2]
+                             transition-all duration-500">
+                Game
+              </span>
+              <span className="bg-gradient-to-r from-[#00c896] to-[#06b6d4]
+                             text-transparent bg-clip-text
+                             group-hover:from-[#06b6d4] group-hover:to-[#00c896]
+                             transition-all duration-500">
+                Scope
+              </span>
             </div>
           </Link>
 
           {/* ナビゲーション */}
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4">
             <Link
               href="/"
-              className="text-text-secondary hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
+                         text-text-secondary hover:text-text-primary
+                         hover:bg-accent/10 transition-all duration-200
+                         border border-transparent hover:border-accent/20"
             >
-              高評価
+              <span className="text-lg">🏆</span>
+              <span>高評価</span>
             </Link>
             <Link
               href="/search"
-              className="text-text-secondary hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
+                         text-text-secondary hover:text-text-primary
+                         hover:bg-[#06b6d4]/10 transition-all duration-200
+                         border border-transparent hover:border-[#06b6d4]/20"
             >
-              検索
+              <span className="text-lg">🔍</span>
+              <span>検索</span>
             </Link>
             <Link
               href="/news"
-              className="text-text-secondary hover:text-text-primary transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
+                         text-text-secondary hover:text-text-primary
+                         hover:bg-[#f59e0b]/10 transition-all duration-200
+                         border border-transparent hover:border-[#f59e0b]/20"
             >
-              ニュース
+              <span className="text-lg">📰</span>
+              <span>ニュース</span>
             </Link>
 
             {/* 自動更新ステータス */}
