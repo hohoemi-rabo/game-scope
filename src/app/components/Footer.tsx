@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Container from './Container'
 
 /**
@@ -6,6 +7,7 @@ import Container from './Container'
  *
  * 機能:
  * - コピーライト表示
+ * - プライバシーポリシーへのリンク
  * - データソースのクレジット（OpenCritic）
  * - レスポンシブレイアウト
  */
@@ -20,7 +22,21 @@ export default function Footer() {
             © {currentYear} GameScope. All rights reserved.
           </div>
 
-          <div className="flex gap-4 text-sm text-text-secondary">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-text-secondary">
+            <Link
+              href="/contact"
+              className="hover:text-text-primary transition-colors"
+            >
+              お問い合わせ
+            </Link>
+            <span className="text-gray-700">|</span>
+            <Link
+              href="/privacy-policy"
+              className="hover:text-text-primary transition-colors"
+            >
+              プライバシーポリシー
+            </Link>
+            <span className="text-gray-700">|</span>
             <a
               href="https://opencritic.com"
               target="_blank"
