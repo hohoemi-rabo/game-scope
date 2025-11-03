@@ -52,9 +52,11 @@ npx tsx scripts/sync-hybrid-to-supabase.ts
 
 **重要な開発用スクリプト** (`scripts/` ディレクトリ):
 - `sync-hybrid-to-supabase.ts` - **ハイブリッドデータ同期（本番使用）**
-  - OpenCriticからトップ20の最新ゲーム取得
+  - OpenCriticからトップ60の最新ゲーム取得（20件×3回、skipパラメータ使用）
   - RAWGから英語説明文とジャンル補完
+  - APIリクエスト数: OpenCritic 3回、RAWG 120回（月間無料枠内）
 - `test-rawg-api.ts` - RAWG API動作確認
+- `test-opencritic-pagination.ts` - OpenCritic API ページネーションテスト
 - `test-opencritic-*.ts` - OpenCritic API テストスクリプト群
 
 ## アーキテクチャ構造
@@ -97,6 +99,7 @@ src/
 │       ├── NewsCard.tsx          # ニュースカード ✅
 │       ├── BackButton.tsx        # 戻るボタン ✅
 │       ├── GameInfo.tsx          # ゲーム情報 (OpenCriticリンク対応) ✅
+│       ├── GameDescription.tsx   # ゲーム説明文 (コピー・翻訳機能) ✅
 │       ├── TwitchLivePlayer.tsx  # Twitch プレイヤー埋め込み ✅
 │       ├── TwitchStreamList.tsx  # ライブ配信一覧 ✅
 │       ├── TwitchClipGallery.tsx # クリップギャラリー ✅
@@ -141,7 +144,8 @@ docs/                             # 開発ドキュメント
    - 日次自動更新 (Supabase Scheduler)
 
 2. **データソース（ハイブリッド構成）**
-   - **OpenCritic API**: 最新トップ20ゲームの評価データ（スコア、レビュー数、画像、リンク）
+   - **OpenCritic API**: 最新トップ60ゲームの評価データ（スコア、レビュー数、画像、リンク）
+     - `/game` エンドポイント + skipパラメータで3回取得（skip=0, 20, 40）
    - **RAWG API**: 英語説明文、ジャンル情報の補完
    - **Supabase Database**: キャッシュ層として活用（手動同期）
    - **RSS Feeds (10サイト)**: ゲームニュース
@@ -229,7 +233,8 @@ docs/                             # 開発ドキュメント
 **現在の構成**: OpenCritic (主データ) + RAWG (補完データ)
 
 **データ取得フロー**:
-1. **OpenCritic API** - `/game` エンドポイントからトップ20ゲーム取得
+1. **OpenCritic API** - `/game` エンドポイントからトップ60ゲーム取得
+   - skip=0, 20, 40 の3回リクエストで60件取得
    - 最新の高評価ゲーム（2020年代中心）
    - スコア、レビュー数、プラットフォーム、画像、リンク
 2. **RAWG API** - 各ゲームの英語タイトルで検索
@@ -261,8 +266,10 @@ getRAWGGameDetails(gameId: number) -> { description_raw: string, ... }
 
 **統合スクリプト**: `scripts/sync-hybrid-to-supabase.ts`
 - 実行: `npx tsx scripts/sync-hybrid-to-supabase.ts`
-- 処理: 既存データ削除 → OpenCritic 20件取得 → 各ゲームRAWG補完 → Supabase投入
-- APIレート制限: 300ms待機（RAWG: 20,000req/月）
+- 処理: 既存データ削除 → OpenCritic 60件取得（3回バッチ） → 各ゲームRAWG補完 → Supabase投入
+- APIレート制限:
+  - OpenCritic: 1秒待機（3リクエスト/日）
+  - RAWG: 300ms待機（120リクエスト/日、月間20,000req制限内）
 
 **画像URL設定** (`next.config.ts`):
 - `img.opencritic.com` - OpenCritic画像
@@ -313,6 +320,11 @@ Client (SWR) - ニュース一覧ページ
 **404ハンドリング**: `notFound()` 関数使用
 **Server Component**: データフェッチングはサーバー側
 
+**説明文翻訳機能** (`GameDescription.tsx`):
+- ワンクリックでクリップボードにコピー
+- Google翻訳へ直接リンク（英語→日本語、自動エンコード）
+- Client Componentとして独立実装
+
 ### 4. Twitch連携機能
 
 **実装場所**:
@@ -329,8 +341,13 @@ Client (SWR) - ニュース一覧ページ
 
 **キャッシュ戦略**:
 - Twitch Game ID: データベースキャッシュ 1週間
-- ライブ配信情報: API キャッシュ 5分
-- クリップ情報: API キャッシュ 1時間
+- ライブ配信情報: API キャッシュ 5分（`s-maxage=300`）
+- クリップ情報: API キャッシュ 1時間（`s-maxage=3600`）
+- SWR自動更新: 60秒ごと（サーバーキャッシュ範囲内）
+
+**APIレート制限**:
+- Twitch API: 800リクエスト/分（Client Credentials）
+- 実使用量: 約5-10リクエスト/分（1%未満）
 
 **Twitchゲーム名検索のフォールバック処理**:
 ゲームタイトルの表記ゆれに対応するため、複数のパターンで検索を試行：
@@ -755,9 +772,9 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
 ### 現在の開発状況
 
 - ✅ **Phase 1 (MVP)**: 完了
-  - トップページ（高評価ゲーム一覧）
-  - ゲーム詳細ページ
-  - 初期データ投入（20件）
+  - トップページ（高評価ゲーム60件表示）
+  - ゲーム詳細ページ（説明文コピー・翻訳機能付き）
+  - 初期データ投入（60件）
 
 - ✅ **Phase 2 (UX拡張)**: 完了
   - 検索機能（debounce、プラットフォームフィルター、スコアフィルター）
@@ -771,10 +788,14 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - Twitch Game ID キャッシュ機構（1週間）
   - **Twitchゲーム名フォールバック検索**（タイトル表記ゆれ対応）
   - **OpenCritic + RAWG ハイブリッド構成実装** ✅
-    - OpenCritic: 最新トップ20ゲーム（評価、画像、リンク）
+    - OpenCritic: 最新トップ60ゲーム（評価、画像、リンク）
+    - skipパラメータで3回バッチ取得（skip=0, 20, 40）
     - RAWG: 英語説明文、ジャンル補完
     - データベーススキーマ統合（不要カラム削除）
     - 統合同期スクリプト実装
+  - **ゲーム説明文の翻訳支援機能** ✅
+    - クリップボードコピー機能
+    - Google翻訳リンク統合
   - **プロジェクトローカルSupabase MCP設定**
 
 - 🔜 **Phase 3 (運用自動化)**: デプロイ前に実装予定
