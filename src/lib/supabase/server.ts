@@ -86,3 +86,29 @@ export const getGameByOpencriticId = cache(async (opencriticId: string) => {
 
   return data
 })
+
+/**
+ * 最新の自動更新ログを取得
+ */
+export const getLatestSyncLog = cache(async () => {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase
+    .from('operation_logs')
+    .select('*')
+    .eq('operation_type', 'auto_sync')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error) {
+    // ログが存在しない場合はnullを返す
+    if (error.code === 'PGRST116') {
+      return null
+    }
+    console.error('Failed to fetch latest sync log:', error)
+    return null
+  }
+
+  return data
+})
