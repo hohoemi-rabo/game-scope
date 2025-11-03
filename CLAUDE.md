@@ -77,7 +77,11 @@ src/
 │   ├── search/
 │   │   └── page.tsx              # 検索ページ ✅
 │   ├── news/
-│   │   └── page.tsx              # ニュース一覧ページ ✅
+│   │   └── page.tsx              # ニュース一覧ページ (カラーフィルター対応) ✅
+│   ├── privacy-policy/
+│   │   └── page.tsx              # プライバシーポリシーページ ✅
+│   ├── contact/
+│   │   └── page.tsx              # お問い合わせページ (GitHub Issues + Instagram DM) ✅
 │   ├── api/                      # API Routes
 │   │   ├── news/
 │   │   │   └── route.ts          # ニュース取得API ✅
@@ -92,11 +96,11 @@ src/
 │       ├── ScoreBadge.tsx        # スコア表示バッジ ✅
 │       ├── Container.tsx         # コンテンツ幅制限 ✅
 │       ├── LoadingSpinner.tsx    # ローディングスピナー ✅
-│       ├── Header.tsx            # ヘッダー ✅
-│       ├── Footer.tsx            # フッター ✅
+│       ├── Header.tsx            # ヘッダー (グラデーションロゴ、絵文字アイコン) ✅
+│       ├── Footer.tsx            # フッター (お問い合わせ、プライバシーポリシーリンク) ✅
 │       ├── SearchBar.tsx         # 検索バー (debounce対応) ✅
 │       ├── FilterPanel.tsx       # フィルターパネル ✅
-│       ├── NewsCard.tsx          # ニュースカード ✅
+│       ├── NewsCard.tsx          # ニュースカード (カラー左ボーダー、バッジ) ✅
 │       ├── BackButton.tsx        # 戻るボタン ✅
 │       ├── GameInfo.tsx          # ゲーム情報 (OpenCriticリンク対応) ✅
 │       ├── GameDescription.tsx   # ゲーム説明文 (コピー・翻訳機能) ✅
@@ -117,8 +121,10 @@ src/
 │   │   ├── game-twitch.ts        # Twitch x Game統合ロジック ✅
 │   │   ├── opencritic.ts         # OpenCritic API クライアント ✅
 │   │   └── rawg.ts               # RAWG API クライアント ✅
-│   └── hooks/
-│       └── useTwitchPlayer.ts    # Twitch Player SDK フック ✅
+│   ├── hooks/
+│   │   └── useTwitchPlayer.ts    # Twitch Player SDK フック ✅
+│   └── utils/
+│       └── platform-colors.ts    # ニュースサイト別カラーユーティリティ ✅
 │
 supabase/                         # Supabase プロジェクト設定
 ├── migrations/                   # データベースマイグレーション ✅
@@ -179,16 +185,56 @@ docs/                             # 開発ドキュメント
 
 ### フォント設定
 
-- **Geist Sans**: メインフォント (Vercel提供)
-- **Geist Mono**: コードフォント
-- **日本語**: Noto Sans JP (導入予定)
-- **数値**: Roboto Mono (導入予定)
+- **Inter**: 見出し用フォント（Google Fonts、優先度高）
+- **Noto Sans JP**: 日本語本文フォント（Google Fonts、body要素）
+- **Geist Mono**: スコアバッジ・コード用フォント（Vercel提供）
+- フォント変数: `--font-inter`, `--font-noto-sans-jp`, `--font-geist-mono`
+
+**フォント適用順序**:
+- Body: Noto Sans JP → Inter → システムフォント
+- Headings: Inter → Noto Sans JP → システムフォント
+- Score Badge: Geist Mono (monospace、変更なし)
 
 ### レスポンシブデザイン
 
 - モバイルファースト設計
 - ブレークポイント: 767px (1列/2列切り替え)
 - Tailwindのユーティリティクラスを活用
+
+### ニュースサイト別カラーシステム
+
+**重要**: 動的カラークラスを使用するため、`tailwind.config.ts` の `safelist` に登録が必須
+
+**実装ファイル**: `src/lib/utils/platform-colors.ts`
+
+各ニュースサイトに固有の色を割り当て:
+- **4Gamer**: `#5865f2` (ブルー)
+- **4Gamer (PC)**: `#9b59b6` (パープル)
+- **4Gamer (スマホ)**: `#e91e63` (ピンク)
+- **4Gamer (PlayStation)**: `#3498db` (ライトブルー)
+- **4Gamer (Switch)**: `#e74c3c` (レッド)
+- **PlayStation Blog**: `#667eea` (インディゴ)
+- **Nintendo**: `#f59e0b` (オレンジ)
+- **Game*Spark**: `#00c896` (グリーン)
+- **GAME Watch**: `#06b6d4` (シアン)
+- **GAMER**: `#fbbf24` (イエロー)
+
+**ユーティリティ関数**:
+```typescript
+// フィルターボタンの色取得
+getPlatformButtonColor(platform: string, isSelected: boolean): string
+
+// ニュースカードのバッジ色取得（背景20%透過）
+getPlatformBadgeColor(platform: string): string
+
+// ニュースカード左ボーダー色取得（border-l-4で使用）
+getPlatformBorderColor(platform: string): string
+```
+
+**Tailwind Safelist設定**:
+- 各色の base, /20, /30 バリアント
+- text-*, bg-*, border-l-* のすべてのバリエーション
+- グラデーション用の from-*, via-*, to-* クラス
 
 ## データベース設計
 
@@ -301,6 +347,12 @@ Client (SWR) - ニュース一覧ページ
 
 **重要**: バックエンドではキーワードフィルタリングせず全記事取得。クライアント側でフィルタリング。
 
+**カラーフィルターシステム**:
+- フィルターボタン: サイト別カラー表示（選択時は背景塗りつぶし、未選択時は20%透過）
+- ニュースカード: 左ボーダー（4px、サイト別カラー）+ バッジ（20%透過背景）
+- カラーマッピング: `src/lib/utils/platform-colors.ts` で一元管理
+- Tailwind Safelist: 動的カラークラス生成のため必須設定
+
 ### 2. 検索機能 (ゲーム検索)
 
 **実装場所**: `src/app/search/page.tsx`, `src/lib/supabase/search.ts`
@@ -311,6 +363,8 @@ Client (SWR) - ニュース一覧ページ
 - スコア範囲フィルター（80+、60-79、60未満）
 
 **URL同期**: 検索状態はURLパラメータに保存（`?q=...&platforms=...&minScore=...`）
+
+**検索結果表示件数**: デフォルト100件（全60件のゲームを確実に表示）
 
 ### 3. ゲーム詳細ページ
 
@@ -355,6 +409,69 @@ Client (SWR) - ニュース一覧ページ
 2. 数字前のスペース削除（例: "Red Dead Redemption2"）
 3. ローマ数字変換（例: "Red Dead Redemption II"）
 4. "Remastered"削除（該当する場合）
+
+### 5. ヘッダーデザイン
+
+**実装場所**: `src/app/components/Header.tsx`
+
+**GameScopeロゴ**:
+- 🎮 絵文字アイコン（ホバーで1.1倍拡大）
+- "Game" テキスト: ブルー→パープル→ピンク グラデーション
+- "Scope" テキスト: グリーン→シアン グラデーション
+- ホバー効果: グラデーション方向が反転（500ms transition）
+
+**ナビゲーションリンク**:
+- 🏆 高評価 (トップページ): アクセントカラーホバー
+- 🔍 検索: 検索ページへのリンク
+- 📰 ニュース: ニュースページへのリンク
+- 各リンクに絵文字アイコン + ホバーで背景色・ボーダー変化
+
+### 6. プライバシーポリシーページ
+
+**実装場所**: `src/app/privacy-policy/page.tsx`
+
+**静的ページ**: Server Component として実装（SSG生成）
+
+**9つのセクション**:
+1. はじめに
+2. 収集する情報（アクセスログ、Cookie、利用状況）
+3. 情報の利用目的
+4. Cookie（クッキー）について
+5. 外部サービスの利用（Supabase、OpenCritic、RAWG、Twitch のプライバシーポリシーリンク）
+6. 第三者への情報提供
+7. セキュリティ
+8. プライバシーポリシーの変更
+9. お問い合わせ（GitHub Issues へのリンク）
+
+**重要**: 個人情報（氏名、メールアドレス）は収集していない旨を明記
+
+### 7. お問い合わせページ
+
+**実装場所**: `src/app/contact/page.tsx`
+
+**静的ページ**: Server Component として実装（SSG生成）
+
+**2つのお問い合わせ方法**（2カラムレイアウト）:
+
+1. **GitHub Issues**（ブルー→パープル グラデーション）:
+   - 📢 公開でのお問い合わせ
+   - バグ報告・機能要望に最適
+   - 過去の質問検索可能、他ユーザーとの共有、開発進捗の可視化
+   - リンク: `https://github.com/hohoemi-rabo/game-scope/issues/new`
+
+2. **Instagram DM**（ピンク→オレンジ グラデーション）:
+   - 🔒 プライベートなお問い合わせ
+   - 個人的な質問、非公開の内容に最適
+   - プライベートなやり取り、気軽なメッセージ、画像・動画送信可能
+   - リンク: `https://www.instagram.com/masayuki.kiwami/`
+
+**追加コンテンツ**:
+- GitHub Issuesとは？（説明セクション）
+- 利用方法（3ステップガイド）
+- 注意事項（公開情報、返信時間、スパム対策）
+- CTAボタン（ページ下部に再配置）
+
+**フッターリンク**: お問い合わせ、プライバシーポリシー、OpenCriticクレジット
 
 ## 開発時の注意事項
 
@@ -429,16 +546,27 @@ Phase 1とPhase 2は完了済み。Phase 3（運用自動化）が次のステ�
 - OpenCritic API `/game` エンドポイント調査・テスト ✅
 - テストページ実装 (`/test-opencritic`) ✅
 - Supabase MCP プロジェクトローカル設定 ✅
-- **OpenCriticトップ20への完全置き換え** - `sync-opencritic-to-supabase.ts` スクリプト実装、全20件同期完了 ✅
+- **OpenCriticトップ60への完全置き換え** - `sync-hybrid-to-supabase.ts` スクリプト実装、全60件同期完了 ✅
 - **`opencritic_stats` カラム追加**（OpenCritic統計情報用、`description`から改名） ✅
 - **Twitchゲーム名フォールバック検索** - タイトル表記ゆれに自動対応 ✅
 - **FilterPanel修正** - プラットフォーム名とDB値のマッピング対応 ✅
 - **GameCard画像調整** - `object-cover` + `scale-90` で画像表示改善 ✅
 
-**Phase 3 (運用自動化):** 🔜 デプロイ前に実装予定
-- `10_自動更新システム.md` - Edge Functions、Cron Jobs
-- OpenCritic `/game` エンドポイントを利用した日次自動更新
-- **現在**: レイアウト調整などの開発継続中
+**Phase 3 (運用自動化):** ✅ 完了
+- `10_自動更新システム.md` - Edge Functions、Cron Jobs ✅
+- OpenCritic `/game` エンドポイントを利用した日次自動更新 ✅
+- Edge Function `sync-games` デプロイ済み
+- Cron Job設定済み（毎日午前3時 JST）
+- 手動更新スクリプト (`sync-hybrid-to-supabase.ts`, `trigger-sync.sh`) 実装済み
+
+**UI改善 (継続中):** 🎨
+- フォント改善（Inter + Noto Sans JP 導入） ✅
+- ヘッダーデザイン（グラデーションロゴ、絵文字アイコン） ✅
+- ニュースカラーシステム（サイト別カラーフィルター） ✅
+- プライバシーポリシーページ追加 ✅
+- お問い合わせページ追加（GitHub Issues + Instagram DM） ✅
+- 検索結果表示件数調整（100件） ✅
+- **現在**: 継続的なUI/UX改善中
 
 ## 環境変数 (.env.local)
 
@@ -804,6 +932,29 @@ Next.js 15 の最新ベストプラクティスや Supabase 統合パターン�
   - Cron Job設定済み（毎日午前3時 JST）
   - 手動更新スクリプト (`sync-hybrid-to-supabase.ts`, `trigger-sync.sh`) 実装済み
   - 運用ドキュメント作成済み（`docs/自動更新システム.md`）
+
+- 🎨 **UI改善**: 継続中
+  - **フォントシステム** ✅
+    - Inter（見出し用）+ Noto Sans JP（本文用）導入
+    - スコアバッジはGeist Monoを維持
+  - **ヘッダーデザイン** ✅
+    - GameScopeロゴ: グラデーション（Game: ブルー→パープル→ピンク、Scope: グリーン→シアン）
+    - 絵文字アイコン追加（🎮 🏆 🔍 📰）
+    - ホバー効果: グラデーション方向反転
+  - **ニュースページカラーシステム** ✅
+    - 10サイト別カラーフィルター実装
+    - ニュースカード左ボーダー（4px）+ カラーバッジ
+    - `src/lib/utils/platform-colors.ts` で一元管理
+    - Tailwind safelist設定
+  - **プライバシーポリシーページ** ✅
+    - 9セクション構成
+    - 外部サービス（Supabase, OpenCritic, RAWG, Twitch）リンク
+  - **お問い合わせページ** ✅
+    - GitHub Issues（公開）+ Instagram DM（非公開）の2チャネル
+    - 2カラムレイアウト、グラデーションカード
+    - 3ステップガイド、注意事項
+  - **検索機能改善** ✅
+    - 表示件数を100件に拡大（全60件を確実に表示）
 
 ### コードレビューのポイント
 

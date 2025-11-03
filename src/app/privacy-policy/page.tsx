@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <p className="text-text-secondary">
             <a
-              href="https://github.com/masayuki/game-scope/issues"
+              href="https://github.com/hohoemi-rabo/game-scope/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent hover:underline"

@@ -71,36 +71,36 @@ export default async function Header() {
           </Link>
 
           {/* ナビゲーション */}
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-2 md:gap-4">
             <Link
               href="/"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-accent/10 transition-all duration-200
                          border border-transparent hover:border-accent/20"
             >
               <span className="text-lg">🏆</span>
-              <span>高評価</span>
+              <span className="hidden md:inline">高評価</span>
             </Link>
             <Link
               href="/search"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-[#06b6d4]/10 transition-all duration-200
                          border border-transparent hover:border-[#06b6d4]/20"
             >
               <span className="text-lg">🔍</span>
-              <span>検索</span>
+              <span className="hidden md:inline">検索</span>
             </Link>
             <Link
               href="/news"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-[#f59e0b]/10 transition-all duration-200
                          border border-transparent hover:border-[#f59e0b]/20"
             >
               <span className="text-lg">📰</span>
-              <span>ニュース</span>
+              <span className="hidden md:inline">ニュース</span>
             </Link>
 
             {/* 自動更新ステータス */}

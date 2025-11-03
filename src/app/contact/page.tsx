@@ -21,32 +21,94 @@ export default function ContactPage() {
           <p className="text-text-secondary text-lg">
             バグ報告・機能要望・質問など、お気軽にお問い合わせください
           </p>
+          <p className="text-text-secondary text-sm mt-2">
+            お問い合わせ方法は2つあります。用途に応じてお選びください。
+          </p>
         </div>
 
-        {/* GitHub Issuesへの誘導カード */}
-        <div className="mb-12 bg-gradient-to-r from-[#5865f2] via-[#9b59b6] to-[#e91e63]
-                        rounded-xl p-8 text-center">
-          <div className="mb-4">
-            <span className="text-6xl">💬</span>
+        {/* お問い合わせ方法（2つのカード） */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
+          {/* GitHub Issuesカード */}
+          <div className="bg-gradient-to-br from-[#5865f2] to-[#9b59b6]
+                          rounded-xl p-8 text-center">
+            <div className="mb-4">
+              <span className="text-5xl">💬</span>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-3">
+              GitHub Issues
+            </h2>
+            <p className="text-sm text-white/80 mb-2 font-semibold">
+              📢 公開でお問い合わせ
+            </p>
+            <p className="text-white/90 text-sm mb-6">
+              バグ報告・機能要望など、他のユーザーと共有したい内容に最適です。
+            </p>
+            <ul className="text-left text-white/90 text-sm space-y-2 mb-6">
+              <li className="flex items-start gap-2">
+                <span>✓</span>
+                <span>過去の質問を検索できる</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>✓</span>
+                <span>他のユーザーも参考にできる</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>✓</span>
+                <span>開発の進捗が見える</span>
+              </li>
+            </ul>
+            <a
+              href="https://github.com/hohoemi-rabo/game-scope/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-900
+                         rounded-lg font-bold hover:bg-gray-100 transition-colors w-full justify-center"
+            >
+              <span className="text-xl">📝</span>
+              <span>Issueを作成</span>
+            </a>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">
-            GitHub Issuesでお問い合わせ
-          </h2>
-          <p className="text-white/90 mb-6">
-            GitHubアカウントをお持ちの方は、GitHub Issuesからお問い合わせいただけます。
-            <br />
-            開発者と直接やり取りでき、過去の質問も検索できて便利です。
-          </p>
-          <a
-            href="https://github.com/masayuki/game-scope/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900
-                       rounded-lg font-bold hover:bg-gray-100 transition-colors"
-          >
-            <span className="text-xl">📝</span>
-            <span>新しいIssueを作成</span>
-          </a>
+
+          {/* Instagram DMカード */}
+          <div className="bg-gradient-to-br from-[#e91e63] to-[#f59e0b]
+                          rounded-xl p-8 text-center">
+            <div className="mb-4">
+              <span className="text-5xl">📷</span>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-3">
+              Instagram DM
+            </h2>
+            <p className="text-sm text-white/80 mb-2 font-semibold">
+              🔒 プライベートでお問い合わせ
+            </p>
+            <p className="text-white/90 text-sm mb-6">
+              個人的な質問や、公開されたくない内容はこちらからどうぞ。
+            </p>
+            <ul className="text-left text-white/90 text-sm space-y-2 mb-6">
+              <li className="flex items-start gap-2">
+                <span>✓</span>
+                <span>プライベートなやり取り</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>✓</span>
+                <span>気軽にメッセージできる</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span>✓</span>
+                <span>画像・動画も送信可能</span>
+              </li>
+            </ul>
+            <a
+              href="https://www.instagram.com/masayuki.kiwami/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-900
+                         rounded-lg font-bold hover:bg-gray-100 transition-colors w-full justify-center"
+            >
+              <span className="text-xl">💌</span>
+              <span>DMを送る</span>
+            </a>
+          </div>
         </div>
 
         {/* GitHub Issuesとは */}
@@ -189,22 +251,35 @@ export default function ContactPage() {
 
         {/* CTAボタン */}
         <div className="text-center">
-          <a
-            href="https://github.com/masayuki/game-scope/issues"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 px-10 py-4
-                       bg-gradient-to-r from-[#5865f2] to-[#9b59b6]
-                       text-white rounded-xl font-bold text-lg
-                       hover:from-[#9b59b6] hover:to-[#5865f2]
-                       transition-all duration-300 shadow-lg hover:shadow-xl"
-          >
-            <span className="text-2xl">🚀</span>
-            <span>GitHub Issuesを見る</span>
-          </a>
-          <p className="text-text-secondary text-sm mt-4">
-            既存のIssueも確認できます
-          </p>
+          <h3 className="text-xl font-bold mb-6">お問い合わせはこちらから</h3>
+          <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <a
+              href="https://github.com/hohoemi-rabo/game-scope/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4
+                         bg-gradient-to-r from-[#5865f2] to-[#9b59b6]
+                         text-white rounded-xl font-bold
+                         hover:from-[#9b59b6] hover:to-[#5865f2]
+                         transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              <span className="text-2xl">💬</span>
+              <span>GitHub Issues</span>
+            </a>
+            <a
+              href="https://www.instagram.com/masayuki.kiwami/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4
+                         bg-gradient-to-r from-[#e91e63] to-[#f59e0b]
+                         text-white rounded-xl font-bold
+                         hover:from-[#f59e0b] hover:to-[#e91e63]
+                         transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              <span className="text-2xl">📷</span>
+              <span>Instagram DM</span>
+            </a>
+          </div>
         </div>
 
         {/* プライバシーポリシーへのリンク */}
@@ -213,7 +288,7 @@ export default function ContactPage() {
             プライバシーポリシー
           </Link>
           <span className="mx-2">•</span>
-          <span>お問い合わせ内容は公開されます</span>
+          <span>GitHub Issuesは公開されます / Instagram DMはプライベートです</span>
         </div>
       </div>
     </Container>
