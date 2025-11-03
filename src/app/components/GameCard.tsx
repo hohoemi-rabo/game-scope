@@ -60,7 +60,7 @@ export default function GameCard({
 
           {/* スコアバッジ（画像の上に重ねて表示） */}
           <div className="absolute top-2 right-2">
-            <ScoreBadge score={metascore} size="sm" />
+            <ScoreBadge score={metascore} size="md" />
           </div>
         </div>
 

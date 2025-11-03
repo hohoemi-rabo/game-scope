@@ -20,7 +20,7 @@ export const searchGames = cache(async ({
   platforms = [],
   minScore = 0,
   maxScore = 100,
-  limit = 50,
+  limit = 100,
 }: SearchParams) => {
   const supabase = createServerClient()
 

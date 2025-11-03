@@ -90,7 +90,7 @@ export const getGameByOpencriticId = cache(async (opencriticId: string) => {
 /**
  * 最新の自動更新ログを取得
  */
-export const getLatestSyncLog = cache(async () => {
+export const getLatestSyncLog = cache(async (): Promise<Database['public']['Tables']['operation_logs']['Row'] | null> => {
   const supabase = createServerClient()
 
   const { data, error } = await supabase

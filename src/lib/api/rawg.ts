@@ -40,7 +40,7 @@ interface RAWGListResponse<T> {
 /**
  * RAWG APIを呼び出す
  */
-async function fetchRAWG(endpoint: string, params: Record<string, string> = {}): Promise<any> {
+async function fetchRAWG(endpoint: string, params: Record<string, string> = {}): Promise<unknown> {
   const apiKey = process.env.RAWG_API_KEY
 
   if (!apiKey) {
@@ -69,11 +69,11 @@ async function fetchRAWG(endpoint: string, params: Record<string, string> = {}):
  */
 export async function getTopRatedGames(limit: number = 20): Promise<GameRawg[]> {
   try {
-    const data: RAWGListResponse<GameRawg> = await fetchRAWG('games', {
+    const data = await fetchRAWG('games', {
       ordering: '-metacritic', // メタスコア降順
       page_size: limit.toString(),
       metacritic: '80,100', // スコア80以上に限定
-    })
+    }) as RAWGListResponse<GameRawg>
 
     return data.results
   } catch (error) {
@@ -87,10 +87,10 @@ export async function getTopRatedGames(limit: number = 20): Promise<GameRawg[]> 
  */
 export async function searchRAWGGame(gameName: string): Promise<GameRawg | null> {
   try {
-    const data: RAWGListResponse<GameRawg> = await fetchRAWG('games', {
+    const data = await fetchRAWG('games', {
       search: gameName,
       page_size: '1',
-    })
+    }) as RAWGListResponse<GameRawg>
 
     if (!data.results || data.results.length === 0) {
       console.warn(`RAWG: Game not found: ${gameName}`)
@@ -111,7 +111,7 @@ export async function searchRAWGGame(gameName: string): Promise<GameRawg | null>
  */
 export async function getRAWGGameDetails(gameId: number): Promise<GameRawg | null> {
   try {
-    const data = await fetchRAWG(`games/${gameId}`)
+    const data = await fetchRAWG(`games/${gameId}`) as GameRawg
     return data
   } catch (error) {
     console.error('Failed to get RAWG game details:', error)
@@ -124,13 +124,13 @@ export async function getRAWGGameDetails(gameId: number): Promise<GameRawg | nul
  */
 export async function getGameScreenshots(gameId: number): Promise<string[]> {
   try {
-    const data = await fetchRAWG(`games/${gameId}/screenshots`)
+    const data = await fetchRAWG(`games/${gameId}/screenshots`) as RAWGListResponse<{ id: number; image: string }>
 
     if (!data.results || data.results.length === 0) {
       return []
     }
 
-    return data.results.map((screenshot: { id: number; image: string }) => screenshot.image)
+    return data.results.map((screenshot) => screenshot.image)
   } catch (error) {
     console.error('Failed to get game screenshots:', error)
     return []

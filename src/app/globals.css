@@ -20,11 +20,12 @@
 @layer base {
   body {
     @apply bg-bg-primary text-text-primary;
-    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+    font-family: var(--font-noto-sans-jp), var(--font-inter), Arial, Helvetica, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
+    font-family: var(--font-inter), var(--font-noto-sans-jp), sans-serif;
   }
 
   h1 {
@@ -44,20 +45,21 @@
   /* スコアバッジの基本スタイル */
   .score-badge {
     @apply inline-flex items-center justify-center
-           font-bold rounded-lg px-3 py-1.5
-           text-lg font-mono;
+           font-bold font-mono rounded-lg px-3 py-1.5
+           text-lg
+           backdrop-blur-sm shadow-lg;
   }
 
   .score-badge-high {
-    @apply score-badge bg-success/20 text-success border border-success/50;
+    @apply score-badge bg-success/30 text-success border border-success/50;
   }
 
   .score-badge-medium {
-    @apply score-badge bg-warning/20 text-warning border border-warning/50;
+    @apply score-badge bg-warning/30 text-warning border border-warning/50;
   }
 
   .score-badge-low {
-    @apply score-badge bg-danger/20 text-danger border border-danger/50;
+    @apply score-badge bg-danger/30 text-danger border border-danger/50;
   }
 }
 
