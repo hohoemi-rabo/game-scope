@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import ScoreBadge from './ScoreBadge'
+import GameDescription from './GameDescription'
 import type { Database } from '@/lib/supabase/types'
 
 type Game = Database['public']['Tables']['games']['Row']
@@ -112,14 +113,7 @@ export default function GameInfo({ game, isLive = false }: GameInfoProps) {
           </div>
 
           {/* 説明文 */}
-          {game.description_en && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-text-secondary mb-2">ゲーム説明</h3>
-              <p className="text-sm text-text-primary leading-relaxed line-clamp-6">
-                {game.description_en}
-              </p>
-            </div>
-          )}
+          {game.description_en && <GameDescription description={game.description_en} />}
 
           {/* リンク */}
           {game.opencritic_id && game.opencritic_numeric_id && (

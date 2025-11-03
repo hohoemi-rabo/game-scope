@@ -24,7 +24,7 @@ export const revalidate = 3600
 export default async function HomePage() {
   try {
     // Server Component で直接データフェッチング
-    const games = await getTopGames(20)
+    const games = await getTopGames(60)
 
     return (
       <Container className="py-8">

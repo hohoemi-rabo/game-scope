@@ -5,9 +5,13 @@
  * npx tsx scripts/sync-hybrid-to-supabase.ts
  *
  * 処理内容:
- * 1. OpenCritic APIから最新トップ20ゲームを取得
+ * 1. OpenCritic APIから最新トップ60ゲームを取得（20件×3回、skipパラメータ使用）
  * 2. 各ゲームについてRAWGで検索し、説明文とジャンルを補完
  * 3. Supabaseに保存（既存データは削除して再作成）
+ *
+ * APIリクエスト数:
+ * - OpenCritic: 3リクエスト（1日1回実行で月90リクエスト、無料枠100内）
+ * - RAWG: 60リクエスト + 60リクエスト（検索+詳細）= 120リクエスト
  */
 
 import { config } from 'dotenv'
@@ -78,12 +82,13 @@ interface OpenCriticGame {
 }
 
 /**
- * OpenCritic APIからトップ20ゲームを取得
+ * OpenCritic APIからゲームを取得（skipパラメータ対応）
  */
-async function fetchOpenCriticGames(): Promise<OpenCriticGame[]> {
-  console.log('📡 OpenCritic APIからトップ20ゲームを取得中...\n')
+async function fetchOpenCriticGamesBatch(skip: number = 0): Promise<OpenCriticGame[]> {
+  const skipParam = skip > 0 ? `?skip=${skip}` : ''
+  console.log(`📡 OpenCritic API 取得中... (skip=${skip})`)
 
-  const response = await fetch(`https://${RAPIDAPI_HOST}/game`, {
+  const response = await fetch(`https://${RAPIDAPI_HOST}/game${skipParam}`, {
     headers: {
       'x-rapidapi-key': OPENCRITIC_API_KEY!,
       'x-rapidapi-host': RAPIDAPI_HOST,
@@ -95,8 +100,34 @@ async function fetchOpenCriticGames(): Promise<OpenCriticGame[]> {
   }
 
   const data = await response.json()
-  console.log(`✅ ${data.length}件のゲームデータを取得しました\n`)
+  console.log(`   ✅ ${data.length}件取得しました`)
   return data
+}
+
+/**
+ * OpenCritic APIから60件取得（20件×3回）
+ */
+async function fetchOpenCriticGames(): Promise<OpenCriticGame[]> {
+  console.log('📡 OpenCritic APIからトップ60ゲームを取得中...\n')
+
+  const allGames: OpenCriticGame[] = []
+
+  // 1回目: 1-20位
+  const batch1 = await fetchOpenCriticGamesBatch(0)
+  allGames.push(...batch1)
+  await new Promise((resolve) => setTimeout(resolve, 1000)) // APIレート制限対策
+
+  // 2回目: 21-40位
+  const batch2 = await fetchOpenCriticGamesBatch(20)
+  allGames.push(...batch2)
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  // 3回目: 41-60位
+  const batch3 = await fetchOpenCriticGamesBatch(40)
+  allGames.push(...batch3)
+
+  console.log(`\n✅ 合計 ${allGames.length}件のゲームデータを取得しました\n`)
+  return allGames
 }
 
 /**
@@ -145,7 +176,7 @@ async function syncToSupabase() {
   const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
   try {
-    // 1. OpenCritic APIからトップ20ゲームを取得
+    // 1. OpenCritic APIからトップ60ゲームを取得（20件×3回）
     const opencriticGames = await fetchOpenCriticGames()
 
     // 2. 既存データを全削除
