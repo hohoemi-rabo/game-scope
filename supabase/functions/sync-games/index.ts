@@ -348,6 +348,7 @@ serve(async (req) => {
     await supabase.from('operation_logs').insert({
       operation_type: 'auto_sync',
       status: 'success',
+      message: `${insertedCount}件のゲームを同期しました`,
       details: summary,
     })
 
@@ -358,8 +359,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('\n❌ エラーが発生しました:', error)
 
+    const errorMessage = error instanceof Error ? error.message : String(error)
     const errorResponse = {
-      error: error.message,
+      error: errorMessage,
       timestamp: new Date().toISOString(),
     }
 
@@ -373,6 +375,7 @@ serve(async (req) => {
         await supabase.from('operation_logs').insert({
           operation_type: 'auto_sync',
           status: 'error',
+          message: `同期に失敗しました: ${errorMessage}`,
           details: errorResponse,
         })
       }
