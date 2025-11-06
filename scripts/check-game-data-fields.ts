@@ -73,7 +73,7 @@ async function checkGameData() {
     console.log('📊 全ゲームのID確認')
     console.log('='.repeat(60) + '\n')
 
-    data.slice(0, 5).forEach((game: any, index: number) => {
+    data.slice(0, 5).forEach((game: Record<string, unknown>, index: number) => {
       console.log(`${index + 1}. ${game.name || 'Unknown'}`)
       console.log(`   ID: ${game.id || '❌ なし'}`)
       console.log(`   Score: ${game.topCriticScore || 'N/A'}`)

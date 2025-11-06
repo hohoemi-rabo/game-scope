@@ -123,7 +123,7 @@ async function fetchRAWG(
   apiKey: string,
   endpoint: string,
   params: Record<string, string> = {}
-): Promise<any> {
+): Promise<unknown> {
   const url = new URL(`https://api.rawg.io/api/${endpoint}`)
   url.searchParams.set('key', apiKey)
 
@@ -215,7 +215,7 @@ async function fetchRAWGDetails(
 /**
  * メイン同期処理
  */
-serve(async (req) => {
+serve(async (_req) => {
   try {
     // 環境変数取得
     const supabaseUrl = Deno.env.get('SUPABASE_URL')

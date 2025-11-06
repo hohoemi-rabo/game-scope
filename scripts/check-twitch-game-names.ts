@@ -60,7 +60,7 @@ async function main() {
       console.log('   ❌ 見つかりませんでした\n')
     } else {
       console.log('   ✅ 見つかりました:')
-      results.forEach((game: any) => {
+      results.forEach((game: Record<string, unknown>) => {
         console.log(`      ID: ${game.id}`)
         console.log(`      名前: ${game.name}`)
       })

@@ -56,16 +56,6 @@ interface OpenCriticGame {
   url?: string
 }
 
-interface SupabaseGame {
-  id: string
-  title_en: string
-  opencritic_id: string | null
-  opencritic_numeric_id: number | null
-  metascore: number | null
-  review_count: number | null
-  thumbnail_url: string | null
-}
-
 async function fetchOpenCriticGames(): Promise<OpenCriticGame[]> {
   if (!OPENCRITIC_API_KEY) {
     throw new Error('OPENCRITIC_API_KEY が設定されていません')
