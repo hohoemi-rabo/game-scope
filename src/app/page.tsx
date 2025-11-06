@@ -1,6 +1,6 @@
-import { getTopGames } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import Container from './components/Container'
-import GameGrid from './components/GameGrid'
+import InfiniteGameGrid from './components/InfiniteGameGrid'
 import type { Metadata } from 'next'
 
 // メタデータの設定
@@ -14,17 +14,39 @@ export const revalidate = 3600
 
 /**
  * トップページ
- * 高評価ゲーム一覧を表示
+ * 高評価ゲーム一覧を表示（無限スクロール対応）
  *
  * データフェッチング:
- * - Server Component で Supabase からゲームデータを取得
- * - React cache() でメモ化されているため、重複クエリなし
- * - ISR により1時間ごとに自動再検証
+ * - 初期20件をサーバー側で取得
+ * - スクロールで追加データを動的読み込み
+ * - パフォーマンス改善のため段階的読み込み
  */
 export default async function HomePage() {
   try {
-    // Server Component で直接データフェッチング
-    const games = await getTopGames(60)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    // 初期データ取得（20件）
+    // ソート順を安定させるため、metascoreとidの2つでソート
+    const { data: initialGames, error } = await supabase
+      .from('games')
+      .select('*')
+      .order('metascore', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
+      .limit(20)
+
+    if (error) {
+      throw error
+    }
+
+    // 総件数取得（さらにデータがあるか判定）
+    const { count } = await supabase
+      .from('games')
+      .select('*', { count: 'exact', head: true })
+
+    const hasMore = count ? 20 < count : false
 
     return (
       <Container className="py-8">
@@ -37,7 +59,10 @@ export default async function HomePage() {
           </p>
         </header>
 
-        <GameGrid games={games} />
+        <InfiniteGameGrid
+          initialGames={initialGames || []}
+          initialHasMore={hasMore}
+        />
       </Container>
     )
   } catch (error) {
