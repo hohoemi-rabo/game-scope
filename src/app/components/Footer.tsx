@@ -44,7 +44,7 @@ export default async function Footer() {
     return {
       isSuccess,
       timeText,
-      label: isSuccess ? '同期成功' : '同期失敗',
+      label: isSuccess ? '最新情報更新済' : '更新確認中',
     }
   }
 
