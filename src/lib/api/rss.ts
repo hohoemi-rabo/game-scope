@@ -76,15 +76,14 @@ export interface NewsItem {
 /**
  * RSS フィードからゲームニュースを取得
  * 各ソースから全記事を取得（フィルタリングはクライアント側で実施）
+ * Promise.allSettled で並列取得して高速化
  */
 export async function fetchNews(): Promise<NewsItem[]> {
-  const allNews: NewsItem[] = []
-
-  for (const source of RSS_SOURCES) {
-    try {
+  // 全ソースを並列で取得
+  const results = await Promise.allSettled(
+    RSS_SOURCES.map(async (source) => {
       const feed = await parser.parseURL(source.url)
-
-      const news = feed.items.map((item) => ({
+      return feed.items.map((item) => ({
         title: item.title || '',
         link: item.link || '',
         pubDate: item.pubDate || item.isoDate || '',
@@ -92,13 +91,18 @@ export async function fetchNews(): Promise<NewsItem[]> {
         platform: source.platform,
         description: item.contentSnippet,
       }))
+    })
+  )
 
-      allNews.push(...news)
-    } catch (error) {
-      console.error(`Failed to fetch RSS from ${source.name}:`, error)
-      // エラーがあっても他のソースは継続
+  // 成功した結果のみを収集
+  const allNews: NewsItem[] = []
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      allNews.push(...result.value)
+    } else {
+      console.error(`Failed to fetch RSS from ${RSS_SOURCES[index].name}:`, result.reason)
     }
-  }
+  })
 
   // 日付順にソート（新しい順）
   return allNews.sort((a, b) => {
