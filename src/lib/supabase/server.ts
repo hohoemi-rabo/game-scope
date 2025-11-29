@@ -112,3 +112,24 @@ export const getLatestSyncLog = cache(async (): Promise<Database['public']['Tabl
 
   return data
 })
+
+/**
+ * 最近の自動更新ログ一覧を取得
+ */
+export const getRecentSyncLogs = cache(async (limit: number = 10): Promise<Database['public']['Tables']['operation_logs']['Row'][]> => {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase
+    .from('operation_logs')
+    .select('*')
+    .eq('operation_type', 'auto_sync')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to fetch recent sync logs:', error)
+    return []
+  }
+
+  return data || []
+})

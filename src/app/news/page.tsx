@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import useSWR from 'swr'
 import Container from '../components/Container'
 import NewsCard from '../components/NewsCard'
@@ -9,6 +9,9 @@ import type { NewsItem } from '@/lib/api/rss'
 import { getPlatformButtonColor } from '@/lib/utils/platform-colors'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
+
+// 1回に表示する件数
+const ITEMS_PER_PAGE = 20
 
 const KEYWORDS = ['全て', '発売', '配信', 'リリース', '予定']
 
@@ -35,6 +38,9 @@ const PLATFORM_ORDER = [
 export default function NewsPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('All')
   const [selectedKeyword, setSelectedKeyword] = useState<string>('全て')
+  const [displayCount, setDisplayCount] = useState<number>(ITEMS_PER_PAGE)
+
+  const observerTarget = useRef<HTMLDivElement>(null)
 
   const { data, error, isLoading } = useSWR('/api/news', fetcher, {
     revalidateOnFocus: false,
@@ -62,6 +68,49 @@ export default function NewsPage() {
 
     return filtered
   }, [data?.news, selectedPlatform, selectedKeyword])
+
+  // フィルターが変更されたら表示件数をリセット
+  useEffect(() => {
+    setDisplayCount(ITEMS_PER_PAGE)
+  }, [selectedPlatform, selectedKeyword])
+
+  // 表示するニュース（displayCountで制限）
+  const displayedNews = useMemo(() => {
+    return filteredNews.slice(0, displayCount)
+  }, [filteredNews, displayCount])
+
+  // もっと読み込めるかどうか
+  const hasMore = displayCount < filteredNews.length
+
+  // 追加読み込み
+  const loadMore = useCallback(() => {
+    if (hasMore) {
+      setDisplayCount((prev) => prev + ITEMS_PER_PAGE)
+    }
+  }, [hasMore])
+
+  // Intersection Observerでスクロール検知
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentTarget = observerTarget.current
+    if (currentTarget) {
+      observer.observe(currentTarget)
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget)
+      }
+    }
+  }, [hasMore, loadMore])
 
   if (error) {
     return (
@@ -156,11 +205,28 @@ export default function NewsPage() {
             ニュースが見つかりませんでした
           </div>
         ) : (
-          filteredNews.map((newsItem, index) => (
+          displayedNews.map((newsItem, index) => (
             <NewsCard key={`${newsItem.link}-${index}`} {...newsItem} />
           ))
         )}
       </div>
+
+      {/* ローディング表示 */}
+      {hasMore && (
+        <div className="mt-8 flex justify-center">
+          <LoadingSpinner />
+        </div>
+      )}
+
+      {/* すべて読み込み完了 */}
+      {!hasMore && filteredNews.length > ITEMS_PER_PAGE && (
+        <div className="mt-8 text-center text-text-secondary">
+          <p>すべてのニュースを表示しました（全{filteredNews.length}件）</p>
+        </div>
+      )}
+
+      {/* Intersection Observer用のターゲット要素 */}
+      <div ref={observerTarget} className="h-10" />
     </Container>
   )
 }

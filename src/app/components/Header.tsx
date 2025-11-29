@@ -69,6 +69,16 @@ export default function Header() {
               <span className="text-lg">📰</span>
               <span className="hidden md:inline">ニュース</span>
             </Link>
+            <Link
+              href="/status"
+              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
+                         text-text-secondary hover:text-text-primary
+                         hover:bg-success/10 transition-all duration-200
+                         border border-transparent hover:border-success/20"
+            >
+              <span className="text-lg">🔄</span>
+              <span className="hidden md:inline">更新状況</span>
+            </Link>
 
             {/* セパレーター（PCのみ表示） */}
             <div className="hidden md:block w-px h-6 bg-gray-700 mx-2" />
