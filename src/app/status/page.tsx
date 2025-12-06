@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: 'GameScopeのデータ更新状況と仕組みについて',
 }
 
-// 1時間ごとに再検証
-export const revalidate = 3600
+// 常に最新データを取得（動的レンダリング）
+export const dynamic = 'force-dynamic'
 
 export default async function StatusPage() {
   const logs = await getRecentSyncLogs(10)
