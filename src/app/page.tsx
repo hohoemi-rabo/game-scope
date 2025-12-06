@@ -50,13 +50,24 @@ export default async function HomePage() {
 
     return (
       <Container className="py-8">
-        <header className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            高評価ゲーム
-          </h1>
-          <p className="text-text-secondary text-lg">
-            メタスコア順に並んでいます
-          </p>
+        <header className="mb-10">
+          <div className="bg-gradient-to-r from-accent/10 via-[#9b59b6]/10 to-[#e91e63]/10
+                          border border-accent/20 rounded-2xl p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-4xl">🏆</span>
+              <h1 className="text-3xl md:text-4xl font-bold text-text-primary">
+                高評価ゲーム
+              </h1>
+            </div>
+            <p className="text-text-secondary text-base md:text-lg leading-relaxed">
+              世界中のレビューサイト
+              <span className="inline-flex items-center mx-1.5 px-2 py-0.5
+                             bg-success/20 text-success font-bold rounded-md text-sm">
+                メタスコア
+              </span>
+              で高評価を獲得したゲームをランキング形式で紹介
+            </p>
+          </div>
         </header>
 
         <InfiniteGameGrid
