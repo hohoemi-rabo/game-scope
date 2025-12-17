@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Container from './Container'
-import { getLatestSyncLog } from '@/lib/supabase/server'
+import SyncStatus from './SyncStatus'
 
 /**
  * フッターコンポーネント
@@ -10,45 +10,12 @@ import { getLatestSyncLog } from '@/lib/supabase/server'
  * - コピーライト表示
  * - プライバシーポリシーへのリンク
  * - データソースのクレジット（OpenCritic）
- * - 自動更新ステータス表示
+ * - 自動更新ステータス表示（Client Component）
  * - SNSリンク（Instagram, X）
  * - レスポンシブレイアウト
  */
-export default async function Footer() {
+export default function Footer() {
   const currentYear = new Date().getFullYear()
-
-  // 最新の自動更新ログを取得
-  const syncLog = await getLatestSyncLog()
-
-  // ステータスに応じた表示を生成
-  const getSyncStatus = () => {
-    if (!syncLog || !syncLog.status || !syncLog.created_at) {
-      return null
-    }
-
-    const isSuccess = syncLog.status === 'success'
-    const timestamp = new Date(syncLog.created_at)
-    const now = new Date()
-    const diffHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60))
-
-    let timeText = ''
-    if (diffHours < 1) {
-      timeText = '最近'
-    } else if (diffHours < 24) {
-      timeText = `${diffHours}時間前`
-    } else {
-      const diffDays = Math.floor(diffHours / 24)
-      timeText = `${diffDays}日前`
-    }
-
-    return {
-      isSuccess,
-      timeText,
-      label: isSuccess ? '最新情報更新済' : '更新確認中',
-    }
-  }
-
-  const status = getSyncStatus()
 
   return (
     <footer className="border-t border-gray-800 bg-bg-primary mt-auto">
@@ -59,28 +26,8 @@ export default async function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-text-secondary">
-            {/* 自動更新ステータス */}
-            {status && (
-              <>
-                <div
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
-                    status.isSuccess
-                      ? 'bg-success/10 text-success border border-success/20'
-                      : 'bg-danger/10 text-danger border border-danger/20'
-                  }`}
-                  title={`最終同期: ${status.timeText}`}
-                >
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      status.isSuccess ? 'bg-success' : 'bg-danger'
-                    }`}
-                  />
-                  <span>{status.label}</span>
-                  <span className="text-text-secondary">{status.timeText}</span>
-                </div>
-                <span className="text-gray-700">|</span>
-              </>
-            )}
+            {/* 自動更新ステータス（Client Component） */}
+            <SyncStatus />
 
             <Link
               href="/contact"
