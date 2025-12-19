@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import Container from './Container'
+import LoginButton from './auth/LoginButton'
+import UserMenu from './auth/UserMenu'
+import { getCurrentUser } from '@/lib/supabase/server-auth'
 
 /**
  * ヘッダーコンポーネント
@@ -9,10 +12,13 @@ import Container from './Container'
  * - ロゴとサイト名
  * - ナビゲーションリンク
  * - SNSリンク（Instagram, X）
+ * - 認証状態に応じたログインボタン/ユーザーメニュー
  * - sticky position で常に上部に固定
  * - backdrop blur でモダンなデザイン
  */
-export default function Header() {
+export default async function Header() {
+  // サーバーサイドでユーザー情報を取得
+  const user = await getCurrentUser()
 
   return (
     <header className="border-b border-gray-800 bg-bg-primary/80 backdrop-blur-sm sticky top-0 z-50">
@@ -124,6 +130,16 @@ export default function Header() {
                 </svg>
               </a>
             </div>
+
+            {/* セパレーター */}
+            <div className="w-px h-6 bg-gray-700 mx-1 md:mx-2" />
+
+            {/* 認証部分 */}
+            {user ? (
+              <UserMenu user={user} />
+            ) : (
+              <LoginButton />
+            )}
           </nav>
         </div>
       </Container>

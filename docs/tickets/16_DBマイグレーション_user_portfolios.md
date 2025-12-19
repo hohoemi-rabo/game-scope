@@ -1,6 +1,6 @@
 # チケット #16: DBマイグレーション（user_portfolios）
 
-## ステータス: [未着手]
+## ステータス: [完了]
 
 ## 概要
 
@@ -16,9 +16,9 @@ Gaming ROI機能のためのデータベーステーブル `user_portfolios` を
 
 ### 1. user_portfoliosテーブル作成
 
-- [ ] Supabase MCP または SQL Editorでマイグレーション実行
-- [ ] インデックス作成
-- [ ] RLSポリシー設定
+- [x] Supabase MCP または SQL Editorでマイグレーション実行
+- [x] インデックス作成
+- [x] RLSポリシー設定
 
 ### 2. gamesテーブル拡張（任意）
 
@@ -26,8 +26,8 @@ Gaming ROI機能のためのデータベーステーブル `user_portfolios` を
 
 ### 3. TypeScript型定義更新
 
-- [ ] `npm run supabase:types` で型定義を再生成
-- [ ] 型定義ファイルの確認
+- [x] `npm run supabase:types` で型定義を再生成
+- [x] 型定義ファイルの確認
 
 ## 技術仕様
 
@@ -140,10 +140,10 @@ update games set is_top_rated = true where metascore is not null;
 
 ## 受け入れ条件
 
-- [ ] user_portfoliosテーブルが作成されている
-- [ ] RLSポリシーが正しく設定されている
-- [ ] インデックスが作成されている
-- [ ] TypeScript型定義が更新されている
+- [x] user_portfoliosテーブルが作成されている
+- [x] RLSポリシーが正しく設定されている
+- [x] インデックスが作成されている
+- [x] TypeScript型定義が更新されている
 - [ ] ログインユーザーが自分のデータのみ操作できることを確認
 
 ## テスト項目

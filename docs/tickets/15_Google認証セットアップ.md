@@ -1,6 +1,6 @@
 # チケット #15: Google認証セットアップ
 
-## ステータス: [進行中]
+## ステータス: [完了]
 
 ## 概要
 
@@ -16,12 +16,12 @@ Gaming ROI機能の基盤となるGoogle OAuth認証をSupabase Auth経由で実
 
 ### 1. GCP Console設定
 
-- [ ] GCPプロジェクト作成（または既存プロジェクト使用）
-- [ ] OAuth同意画面の設定
+- [x] GCPプロジェクト作成（または既存プロジェクト使用）
+- [x] OAuth同意画面の設定
   - アプリ名: GameScope
   - ユーザーサポートメール設定
   - スコープ: email, profile
-- [ ] OAuth 2.0クライアントID作成
+- [x] OAuth 2.0クライアントID作成
   - アプリケーションの種類: ウェブアプリケーション
   - 承認済みJavaScriptオリジン:
     - `http://localhost:3000`（開発用）
@@ -31,12 +31,12 @@ Gaming ROI機能の基盤となるGoogle OAuth認証をSupabase Auth経由で実
 
 ### 2. Supabase設定
 
-- [ ] Supabase Dashboard > Authentication > Providers > Google
+- [x] Supabase Dashboard > Authentication > Providers > Google
   - Client IDを設定
   - Client Secretを設定
   - Enabledをオンに
-- [ ] Redirect URLsの確認
-- [ ] Site URLの設定（本番URL）
+- [x] Redirect URLsの確認
+- [x] Site URLの設定（本番URL）
 
 ### 3. 環境変数設定
 
@@ -127,11 +127,11 @@ export async function signOut() {
 
 ## 受け入れ条件
 
-- [ ] GCPでOAuth同意画面とクライアントIDが設定されている
-- [ ] Supabase DashboardでGoogle Providerが有効化されている
-- [ ] 開発環境でGoogleログイン/ログアウトが動作する
+- [x] GCPでOAuth同意画面とクライアントIDが設定されている
+- [x] Supabase DashboardでGoogle Providerが有効化されている
+- [x] 開発環境でGoogleログイン/ログアウトが動作する
 - [ ] 本番環境のURLが承認済みオリジンに追加されている
-- [ ] ログインなしで既存機能が引き続き利用可能
+- [x] ログインなしで既存機能が引き続き利用可能
 
 ## 参考資料
 
