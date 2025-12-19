@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import GameListItem from './GameListItem'
+import EditGameModal from '@/app/components/portfolio/EditGameModal'
+import DeleteConfirmDialog from '@/app/components/portfolio/DeleteConfirmDialog'
 import type { PortfolioWithGame } from '@/types/portfolio'
 
 interface GameListProps {
@@ -10,11 +13,12 @@ interface GameListProps {
 
 /**
  * 登録ゲーム一覧
- * 編集・削除は#21で実装予定（現在はプレースホルダー）
+ * 編集モーダル・削除ダイアログを統合
  */
 export default function GameList({ portfolios }: GameListProps) {
-  const [, setEditingId] = useState<string | null>(null)
-  const [, setDeletingId] = useState<string | null>(null)
+  const router = useRouter()
+  const [editingPortfolio, setEditingPortfolio] = useState<PortfolioWithGame | null>(null)
+  const [deletingPortfolio, setDeletingPortfolio] = useState<PortfolioWithGame | null>(null)
 
   if (portfolios.length === 0) {
     return (
@@ -30,28 +34,57 @@ export default function GameList({ portfolios }: GameListProps) {
     )
   }
 
-  const handleEdit = (id: string) => {
-    // #21で実装予定
-    setEditingId(id)
-    console.log('Edit:', id)
+  const handleEdit = (portfolio: PortfolioWithGame) => {
+    setEditingPortfolio(portfolio)
   }
 
-  const handleDelete = (id: string) => {
-    // #21で実装予定
-    setDeletingId(id)
-    console.log('Delete:', id)
+  const handleDelete = (portfolio: PortfolioWithGame) => {
+    setDeletingPortfolio(portfolio)
+  }
+
+  const handleEditSuccess = () => {
+    // サーバーコンポーネントのデータを再取得
+    router.refresh()
+  }
+
+  const handleDeleteSuccess = () => {
+    // サーバーコンポーネントのデータを再取得
+    router.refresh()
   }
 
   return (
-    <div className="space-y-3">
-      {portfolios.map((portfolio) => (
-        <GameListItem
-          key={portfolio.id}
-          portfolio={portfolio}
-          onEdit={() => handleEdit(portfolio.id)}
-          onDelete={() => handleDelete(portfolio.id)}
+    <>
+      <div className="space-y-3">
+        {portfolios.map((portfolio) => (
+          <GameListItem
+            key={portfolio.id}
+            portfolio={portfolio}
+            onEdit={() => handleEdit(portfolio)}
+            onDelete={() => handleDelete(portfolio)}
+          />
+        ))}
+      </div>
+
+      {/* 編集モーダル */}
+      {editingPortfolio && (
+        <EditGameModal
+          portfolio={editingPortfolio}
+          isOpen={true}
+          onClose={() => setEditingPortfolio(null)}
+          onSuccess={handleEditSuccess}
         />
-      ))}
-    </div>
+      )}
+
+      {/* 削除確認ダイアログ */}
+      {deletingPortfolio && (
+        <DeleteConfirmDialog
+          portfolioId={deletingPortfolio.id}
+          gameName={deletingPortfolio.games.title_ja || deletingPortfolio.games.title_en}
+          isOpen={true}
+          onClose={() => setDeletingPortfolio(null)}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
+    </>
   )
 }
