@@ -1,6 +1,6 @@
 # チケット #15: Google認証セットアップ
 
-## ステータス: [未着手]
+## ステータス: [進行中]
 
 ## 概要
 
@@ -50,12 +50,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=（既存）
 
 ### 4. Supabaseクライアント拡張
 
-- [ ] `src/lib/supabase/client.ts` - ブラウザ用クライアント作成
-- [ ] 認証ヘルパー関数の実装
+- [x] `src/lib/supabase/client.ts` - ブラウザ用クライアント（@supabase/ssr対応）
+- [x] `src/lib/supabase/server-auth.ts` - Server Components用認証クライアント
+- [x] `src/lib/supabase/middleware.ts` - Middlewareヘルパー
+- [x] `src/middleware.ts` - セッション更新Middleware
+- [x] `src/app/auth/callback/route.ts` - OAuthコールバック
+- [x] `src/app/auth/error/page.tsx` - 認証エラーページ
+- [x] `src/lib/auth/actions.ts` - 認証ヘルパー関数
   - `signInWithGoogle()` - Googleログイン
   - `signOut()` - ログアウト
+- [x] `src/lib/supabase/server-auth.ts` に追加
+  - `getCurrentUser()` - ユーザー情報取得
   - `getSession()` - セッション取得
-  - `getUser()` - ユーザー情報取得
 
 ## 技術仕様
 
