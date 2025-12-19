@@ -10,19 +10,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 海外中心のゲーム評価データ(OpenCritic, Twitch等)を日本語でわかりやすく可視化し、一般ゲーマーに対して直感的かつ迅速に「どんなゲームか」を理解できる体験を提供する。
 
 ### 開発段階
-- **現在**: MVP完了、Phase 3（運用自動化）完了
+- **現在**: Phase 1〜3 完了、**Phase 2（Gaming ROI機能）開発準備完了**
 - Claude Code でのペアプログラミングを前提とした開発
-- 次のステップ: 継続的なUI/UX改善
+- 次のステップ: Gaming ROI（コスパ管理機能）の実装
 
 ## 技術スタック
 
-- **Next.js 15** (App Router, Turbopack)
+- **Next.js 15.5.7** (App Router, Turbopack)
 - **React 19**
 - **TypeScript** (strict mode)
 - **Tailwind CSS 3.4.17**
-- **Supabase** (Database, Edge Functions, Scheduler) - MCP Server統合
+- **Supabase** (Database, Auth, Edge Functions, Scheduler) - MCP Server統合
 - **SWR** (クライアント側データフェッチング)
 - **Vercel** (デプロイ予定)
+
+### Phase 2 追加技術
+- **Supabase Auth** - Google OAuth認証
+- **Row Level Security (RLS)** - ユーザーデータの行レベルセキュリティ
+- **Server Actions** - ポートフォリオCRUD操作
 
 ## 重要な開発コマンド
 
@@ -117,6 +122,18 @@ Next.js Server Components
 
 フッターに最新ログのステータスを表示（同期成功/失敗 + 経過時間）
 
+### user_portfoliosテーブル（Phase 2）
+
+ユーザーのゲームポートフォリオを管理:
+- `user_id` (UUID): auth.usersへの外部キー
+- `game_id` (UUID): gamesテーブルへの外部キー
+- `purchase_price` (INTEGER): 購入金額（円）
+- `play_time_minutes` (INTEGER): プレイ時間（分）
+- `is_subscription` (BOOLEAN): サブスク/無料フラグ
+- `status` (TEXT): playing / completed / dropped / backlog
+
+**RLS必須**: ユーザーは自分のデータのみアクセス可能
+
 ## デザインシステム
 
 ### カラーパレット
@@ -201,14 +218,25 @@ Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 
 **ヘッダー** (`src/app/components/Header.tsx`):
 - GameScopeロゴ: グラデーション（Game: ブルー→パープル→ピンク、Scope: グリーン→シアン）
-- ナビゲーション: 🏆 高評価 | 🔍 検索 | 📰 ニュース
+- ナビゲーション: 🏆 高評価 | 🔍 検索 | 📰 ニュース | 🔄 更新状況
 - SNSリンク（PCのみ表示）: Instagram、X（公式SVGロゴ）
 - モバイル: 768px未満ではアイコンのみ表示
+- **Phase 2**: ログインボタン / ユーザーメニュー（ドロップダウン）追加予定
 
 **フッター** (`src/app/components/Footer.tsx`):
-- 同期ステータス表示（🟢 成功 / 🔴 失敗 + 経過時間）
+- 同期ステータス表示（🟢 最新情報更新済 / 🔴 更新エラー + 経過時間）
 - SNSリンク（全デバイス表示）
 - リンク: お問い合わせ（GitHub Issues + Instagram DM）、プライバシーポリシー、Powered by OpenCritic
+- **SyncStatus**: Client ComponentでAPIから最新状態を取得（`/api/sync-status`）
+
+### 5. 更新状況ページ
+
+**実装場所**: `src/app/status/page.tsx`
+
+- データソース一覧（OpenCritic, RAWG, Twitch, ニュースRSS）
+- 更新スケジュール（毎日3:00 JST）
+- 最近の更新履歴（operation_logsから取得）
+- **動的レンダリング**: `export const dynamic = 'force-dynamic'` で常に最新データ
 
 ## Next.js 15 App Router ベストプラクティス
 
@@ -338,6 +366,17 @@ const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL // Client可
 - ステータス: `[未着手]`, `[進行中]`, `[完了]`, `[保留]`
 - Todoマーク: `- [ ]` (未完了), `- [x]` (完了)
 
+**Phase 2 チケット一覧**:
+| # | チケット名 | 内容 |
+|---|-----------|------|
+| 15 | Google認証セットアップ | Supabase Auth + GCP OAuth設定 |
+| 16 | DBマイグレーション | user_portfoliosテーブル + RLS |
+| 17 | 認証UI実装 | ログインボタン / ユーザーメニュー |
+| 18 | RAWGゲーム検索API | 検索・登録API実装 |
+| 19 | ポートフォリオ登録機能 | モーダルUI + Server Action |
+| 20 | ダッシュボードUI | サマリー + ゲームリスト + CPH |
+| 21 | 編集削除機能 | 編集モーダル + 削除ダイアログ |
+
 ## 環境変数 (.env.local)
 
 ```env
@@ -364,14 +403,31 @@ TWITCH_CLIENT_SECRET=   # Twitch API
 ## 現在の開発状況
 
 - ✅ **Phase 1 (MVP)**: 完了（高評価ゲーム一覧、詳細ページ）
-- ✅ **Phase 2 (UX拡張)**: 完了（検索、ニュース一覧）
-- ✅ **Phase 2.5 (Twitch連携)**: 完了（配信・クリップ表示）
-- ✅ **Phase 3 (運用自動化)**: 完了（Edge Functions、Cron Jobs）
-- 🎨 **UI改善**: 継続中（フォント、ヘッダー/フッター、SNSリンク）
+- ✅ **Phase 1.5 (UX拡張)**: 完了（検索、ニュース一覧、更新状況ページ）
+- ✅ **Phase 1.6 (Twitch連携)**: 完了（配信・クリップ表示）
+- ✅ **Phase 1.7 (運用自動化)**: 完了（Edge Functions、Cron Jobs）
+- ✅ **UI改善**: 完了（フォント、ヘッダー/フッター、SNSリンク、無限スクロール）
+- 🚀 **Phase 2 (Gaming ROI)**: チケット作成完了、実装準備中
+
+### Phase 2 概要（Gaming ROI / コスパ管理機能）
+
+ユーザーが購入したゲームの「金額」と「プレイ時間」を記録し、**CPH（Cost Per Hour: 時間あたりコスト）**を算出・可視化する機能。
+
+**コンセプト**: ゲームを「消費」ではなく「投資」として捉え直し、ユーザーの自己肯定感を高める。
+
+**CPHランク定義**:
+| ランク | CPH範囲 | メッセージ |
+|--------|---------|-----------|
+| 💎 God Tier | 0〜50円 | 実質無料 |
+| 🥇 Gold Tier | 51〜200円 | 超優良投資 |
+| 🥈 Silver Tier | 201〜500円 | 映画館より安い |
+| 🥉 Bronze Tier | 501〜1500円 | 適正価格 |
+| 💸 Luxury | 1501円〜 | 贅沢な遊び |
 
 ## 参考資料
 
-- [REQUIREMENTS.md](./REQUIREMENTS.md) - 詳細な要件定義書
+- [REQUIREMENTS.md](./REQUIREMENTS.md) - Phase 1 要件定義書
+- [docs/REQUIREMENTS_PHASE2.md](./docs/REQUIREMENTS_PHASE2.md) - Phase 2 (Gaming ROI) 要件定義書
 - [docs/tickets/](./docs/tickets/) - 機能別開発チケット
 - [docs/自動更新システム.md](./docs/自動更新システム.md) - 運用ドキュメント
 - [Next.js 15 Documentation](https://nextjs.org/docs)
