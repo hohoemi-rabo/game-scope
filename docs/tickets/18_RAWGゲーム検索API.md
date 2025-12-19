@@ -1,6 +1,6 @@
 # チケット #18: RAWGゲーム検索API
 
-## ステータス: [未着手]
+## ステータス: [完了]
 
 ## 概要
 
@@ -16,20 +16,20 @@
 
 ### 1. ゲーム検索API
 
-- [ ] `/api/games/search` エンドポイント作成
-- [ ] RAWG API検索の実装
-- [ ] 検索結果のフォーマット
+- [x] `/api/games/search` エンドポイント作成
+- [x] RAWG API検索の実装
+- [x] 検索結果のフォーマット
 
 ### 2. ゲーム登録API
 
-- [ ] `/api/games/register` エンドポイント作成
-- [ ] gamesテーブルへのupsert処理
-- [ ] 既存ゲームの場合は既存レコードを返す
+- [x] `/api/games/register` エンドポイント作成
+- [x] gamesテーブルへのupsert処理
+- [x] 既存ゲームの場合は既存レコードを返す
 
 ### 3. 既存コードの活用
 
-- [ ] `src/lib/api/rawg.ts` の確認・拡張
-- [ ] 既存の型定義の活用
+- [x] `src/lib/api/rawg.ts` の確認・拡張
+- [x] 既存の型定義の活用
 
 ## 技術仕様
 
@@ -248,14 +248,22 @@ export function useGameSearch() {
 
 - なし（既存のRAWG API設定を使用）
 
+## 追加作業（実装時に実施）
+
+- [x] gamesテーブルに`rawg_id`カラム追加（INTEGER, UNIQUE）
+- [x] gamesテーブルに`is_top_rated`カラム追加（BOOLEAN, DEFAULT false）
+- [x] TypeScript型定義の再生成
+- [x] `src/types/game-search.ts` 型定義ファイル作成
+- [x] `src/hooks/useGameSearch.ts` 検索フック作成
+
 ## 受け入れ条件
 
-- [ ] `/api/games/search?q=xxx` でゲーム検索ができる
-- [ ] 検索結果にタイトル、サムネイル、発売日、プラットフォームが含まれる
-- [ ] `/api/games/register` でゲームをDBに登録できる
-- [ ] 既存ゲームの場合は重複登録されない
-- [ ] 500ms debounceが機能している
-- [ ] エラーハンドリングが適切
+- [x] `/api/games/search?q=xxx` でゲーム検索ができる
+- [x] 検索結果にタイトル、サムネイル、発売日、プラットフォームが含まれる
+- [x] `/api/games/register` でゲームをDBに登録できる
+- [x] 既存ゲームの場合は重複登録されない
+- [x] 500ms debounceが機能している
+- [x] エラーハンドリングが適切
 
 ## テスト項目
 

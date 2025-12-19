@@ -20,10 +20,12 @@ export type Database = {
           description_en: string | null
           genres: string[] | null
           id: string
+          is_top_rated: boolean | null
           metascore: number | null
           opencritic_id: string | null
           opencritic_numeric_id: number | null
           platforms: string[] | null
+          rawg_id: number | null
           release_date: string | null
           review_count: number | null
           thumbnail_url: string | null
@@ -38,10 +40,12 @@ export type Database = {
           description_en?: string | null
           genres?: string[] | null
           id?: string
+          is_top_rated?: boolean | null
           metascore?: number | null
           opencritic_id?: string | null
           opencritic_numeric_id?: number | null
           platforms?: string[] | null
+          rawg_id?: number | null
           release_date?: string | null
           review_count?: number | null
           thumbnail_url?: string | null
@@ -56,10 +60,12 @@ export type Database = {
           description_en?: string | null
           genres?: string[] | null
           id?: string
+          is_top_rated?: boolean | null
           metascore?: number | null
           opencritic_id?: string | null
           opencritic_numeric_id?: number | null
           platforms?: string[] | null
+          rawg_id?: number | null
           release_date?: string | null
           review_count?: number | null
           thumbnail_url?: string | null
