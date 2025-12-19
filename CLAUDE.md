@@ -10,9 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 海外中心のゲーム評価データ(OpenCritic, Twitch等)を日本語でわかりやすく可視化し、一般ゲーマーに対して直感的かつ迅速に「どんなゲームか」を理解できる体験を提供する。
 
 ### 開発段階
-- **現在**: Phase 1〜3 完了、**Phase 2（Gaming ROI機能）開発準備完了**
+- **現在**: Phase 1〜2 完了
 - Claude Code でのペアプログラミングを前提とした開発
-- 次のステップ: Gaming ROI（コスパ管理機能）の実装
+- Phase 2（Gaming ROI / コスパ管理機能）実装完了
 
 ## 技術スタック
 
@@ -221,7 +221,7 @@ Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 - ナビゲーション: 🏆 高評価 | 🔍 検索 | 📰 ニュース | 🔄 更新状況
 - SNSリンク（PCのみ表示）: Instagram、X（公式SVGロゴ）
 - モバイル: 768px未満ではアイコンのみ表示
-- **Phase 2**: ログインボタン / ユーザーメニュー（ドロップダウン）追加予定
+- ログインボタン / ユーザーメニュー（ドロップダウン）実装済み
 
 **フッター** (`src/app/components/Footer.tsx`):
 - 同期ステータス表示（🟢 最新情報更新済 / 🔴 更新エラー + 経過時間）
@@ -366,16 +366,16 @@ const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL // Client可
 - ステータス: `[未着手]`, `[進行中]`, `[完了]`, `[保留]`
 - Todoマーク: `- [ ]` (未完了), `- [x]` (完了)
 
-**Phase 2 チケット一覧**:
-| # | チケット名 | 内容 |
-|---|-----------|------|
-| 15 | Google認証セットアップ | Supabase Auth + GCP OAuth設定 |
-| 16 | DBマイグレーション | user_portfoliosテーブル + RLS |
-| 17 | 認証UI実装 | ログインボタン / ユーザーメニュー |
-| 18 | RAWGゲーム検索API | 検索・登録API実装 |
-| 19 | ポートフォリオ登録機能 | モーダルUI + Server Action |
-| 20 | ダッシュボードUI | サマリー + ゲームリスト + CPH |
-| 21 | 編集削除機能 | 編集モーダル + 削除ダイアログ |
+**Phase 2 チケット一覧**（全完了）:
+| # | チケット名 | 内容 | ステータス |
+|---|-----------|------|----------|
+| 15 | Google認証セットアップ | Supabase Auth + GCP OAuth設定 | ✅ 完了 |
+| 16 | DBマイグレーション | user_portfoliosテーブル + RLS | ✅ 完了 |
+| 17 | 認証UI実装 | ログインボタン / ユーザーメニュー | ✅ 完了 |
+| 18 | RAWGゲーム検索API | 検索・登録API実装 | ✅ 完了 |
+| 19 | ポートフォリオ登録機能 | モーダルUI + Server Action | ✅ 完了 |
+| 20 | ダッシュボードUI | サマリー + ゲームリスト + CPH | ✅ 完了 |
+| 21 | 編集削除機能 | 編集モーダル + 削除ダイアログ | ✅ 完了 |
 
 ## 環境変数 (.env.local)
 
@@ -407,13 +407,36 @@ TWITCH_CLIENT_SECRET=   # Twitch API
 - ✅ **Phase 1.6 (Twitch連携)**: 完了（配信・クリップ表示）
 - ✅ **Phase 1.7 (運用自動化)**: 完了（Edge Functions、Cron Jobs）
 - ✅ **UI改善**: 完了（フォント、ヘッダー/フッター、SNSリンク、無限スクロール）
-- 🚀 **Phase 2 (Gaming ROI)**: チケット作成完了、実装準備中
+- ✅ **Phase 2 (Gaming ROI)**: 完了（認証、ダッシュボード、ポートフォリオCRUD）
 
-### Phase 2 概要（Gaming ROI / コスパ管理機能）
+### Phase 2 実装内容（Gaming ROI / コスパ管理機能）
 
 ユーザーが購入したゲームの「金額」と「プレイ時間」を記録し、**CPH（Cost Per Hour: 時間あたりコスト）**を算出・可視化する機能。
 
 **コンセプト**: ゲームを「消費」ではなく「投資」として捉え直し、ユーザーの自己肯定感を高める。
+
+**主要ルート**:
+- `/dashboard` - マイダッシュボード（サマリー + ゲームリスト）
+- `/auth/callback` - OAuth コールバック
+- `/auth/error` - 認証エラーページ
+
+**主要コンポーネント**:
+- `src/app/components/auth/` - 認証UI（LoginButton, UserMenu）
+- `src/app/components/dashboard/` - ダッシュボード（Summary, GameList, GameListItem, AddGameButton）
+- `src/app/components/portfolio/` - ポートフォリオ操作（AddGameModal, EditGameModal, DeleteConfirmDialog等）
+
+**Server Actions** (`src/app/actions/portfolio.ts`):
+- `createPortfolioEntry` - ゲーム登録
+- `updatePortfolioEntry` - ゲーム編集
+- `deletePortfolioEntry` - ゲーム削除
+
+**API Routes**:
+- `/api/games/search` - RAWGゲーム検索
+- `/api/games/register` - ゲーム登録（DB upsert）
+
+**CPH計算** (`src/lib/utils/cph.ts`):
+- `calculateCPH()` - 個別ゲームのCPH計算
+- `calculateAverageCPH()` - 平均CPH計算
 
 **CPHランク定義**:
 | ランク | CPH範囲 | メッセージ |
@@ -423,6 +446,8 @@ TWITCH_CLIENT_SECRET=   # Twitch API
 | 🥈 Silver Tier | 201〜500円 | 映画館より安い |
 | 🥉 Bronze Tier | 501〜1500円 | 適正価格 |
 | 💸 Luxury | 1501円〜 | 贅沢な遊び |
+| 🎁 Free | サブスク/無料 | サブスク/無料 |
+| 📚 Unplayed | 未プレイ | 未プレイ |
 
 ## 参考資料
 
