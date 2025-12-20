@@ -11,7 +11,8 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json())
 export default function SyncStatus() {
   const { data, error, isLoading } = useSWR('/api/sync-status', fetcher, {
     refreshInterval: 60000, // 1分ごとに自動更新
-    revalidateOnFocus: true,
+    revalidateOnFocus: false, // フォーカス時の再取得を無効化
+    dedupingInterval: 60000, // 重複リクエストを防止
   })
 
   // ローディング中またはエラー時は何も表示しない

@@ -173,7 +173,7 @@ export function calculateAverageCPH(
 }
 
 /**
- * 時間をフォーマット（例: 120時間, 1.5時間）
+ * 時間をフォーマット（例: 120時間, 1.5時間, 1時間）
  */
 export function formatPlayTime(minutes: number): string {
   const hours = minutes / 60
@@ -181,7 +181,9 @@ export function formatPlayTime(minutes: number): string {
     return `${Math.round(hours)}時間`
   }
   if (hours >= 1) {
-    return `${hours.toFixed(1)}時間`
+    // 小数部分が0なら整数表示（1.0時間 → 1時間）
+    const formatted = hours % 1 === 0 ? Math.floor(hours).toString() : hours.toFixed(1)
+    return `${formatted}時間`
   }
   return `${minutes}分`
 }
@@ -191,4 +193,223 @@ export function formatPlayTime(minutes: number): string {
  */
 export function formatPrice(price: number): string {
   return `¥${price.toLocaleString()}`
+}
+
+/**
+ * 目標CPH（デフォルト: ¥100/時間 = Gold Tierの半分）
+ */
+export const TARGET_CPH = 100
+
+/**
+ * 償却進捗を計算
+ * 目標CPHに到達するまでの進捗率を返す
+ */
+export interface RecoveryProgress {
+  /** 進捗率（0-100、100以上は達成済み） */
+  percent: number
+  /** 目標達成までの残り時間（分） */
+  remainingMinutes: number
+  /** 目標達成済みかどうか */
+  achieved: boolean
+}
+
+export function calculateRecoveryProgress(
+  purchasePrice: number,
+  playTimeMinutes: number,
+  isSubscription: boolean,
+  targetCPH: number = TARGET_CPH
+): RecoveryProgress {
+  // サブスク/無料の場合は100%達成
+  if (isSubscription || purchasePrice === 0) {
+    return { percent: 100, remainingMinutes: 0, achieved: true }
+  }
+
+  // 目標達成に必要な時間（分）
+  const targetMinutes = (purchasePrice / targetCPH) * 60
+
+  // 進捗率
+  const percent = Math.min((playTimeMinutes / targetMinutes) * 100, 100)
+
+  // 残り時間
+  const remainingMinutes = Math.max(targetMinutes - playTimeMinutes, 0)
+
+  return {
+    percent,
+    remainingMinutes,
+    achieved: playTimeMinutes >= targetMinutes,
+  }
+}
+
+/**
+ * 株式風のカラークラス（CPHの良し悪しで色分け）
+ * 低CPH = 緑（良い）、高CPH = 赤（悪い）
+ * icon: 📉 = 遊ぶほど下がる（ポジティブ）
+ */
+export function getStockColor(rank: CPHRank): {
+  textColor: string
+  bgColor: string
+  borderColor: string
+  barColor: string
+  icon: string
+} {
+  switch (rank) {
+    case 'god':
+      return {
+        textColor: 'text-emerald-400',
+        bgColor: 'bg-emerald-900/30',
+        borderColor: 'border-emerald-500/30',
+        barColor: 'bg-emerald-500',
+        icon: '🏆', // 達成！
+      }
+    case 'gold':
+      return {
+        textColor: 'text-emerald-400',
+        bgColor: 'bg-emerald-900/30',
+        borderColor: 'border-emerald-500/30',
+        barColor: 'bg-emerald-500',
+        icon: '📉', // 順調に下降中
+      }
+    case 'silver':
+      return {
+        textColor: 'text-yellow-400',
+        bgColor: 'bg-yellow-900/30',
+        borderColor: 'border-yellow-500/30',
+        barColor: 'bg-yellow-500',
+        icon: '📉', // まだ下がる
+      }
+    case 'bronze':
+      return {
+        textColor: 'text-orange-400',
+        bgColor: 'bg-orange-900/30',
+        borderColor: 'border-orange-500/30',
+        barColor: 'bg-orange-500',
+        icon: '📉', // もっと遊ぼう
+      }
+    case 'luxury':
+      return {
+        textColor: 'text-rose-500',
+        bgColor: 'bg-rose-900/30',
+        borderColor: 'border-rose-500/30',
+        barColor: 'bg-rose-500',
+        icon: '📉', // 遊んで下げよう
+      }
+    case 'free':
+      return {
+        textColor: 'text-cyan-400',
+        bgColor: 'bg-cyan-900/30',
+        borderColor: 'border-cyan-500/30',
+        barColor: 'bg-cyan-500',
+        icon: '🎁', // 無料！
+      }
+    case 'unplayed':
+      return {
+        textColor: 'text-gray-500',
+        bgColor: 'bg-gray-800/50',
+        borderColor: 'border-gray-600/30',
+        barColor: 'bg-gray-600',
+        icon: '📦', // 未開封
+      }
+  }
+}
+
+/**
+ * CPHランクに対応するメタファー（アイコン付き）
+ */
+export function getCPHMetaphor(rank: CPHRank): { emoji: string; label: string } {
+  switch (rank) {
+    case 'god':
+      return { emoji: '💎', label: '実質無料' }
+    case 'gold':
+      return { emoji: '☕', label: '缶コーヒー級' }
+    case 'silver':
+      return { emoji: '🍜', label: 'ランチ級' }
+    case 'bronze':
+      return { emoji: '🎬', label: '映画館級' }
+    case 'luxury':
+      return { emoji: '🍷', label: '高級ディナー級' }
+    case 'free':
+      return { emoji: '🎁', label: '完全無料' }
+    case 'unplayed':
+      return { emoji: '📦', label: '未開封' }
+  }
+}
+
+/**
+ * 次のランクへの昇格情報を取得
+ */
+export function getNextRankInfo(
+  currentRank: CPHRank,
+  purchasePrice: number,
+  playTimeMinutes: number
+): { nextRank: CPHRank; nextEmoji: string; nextLabel: string; minutesNeeded: number } | null {
+  // 既に最高ランクまたは特殊ケース
+  if (currentRank === 'god' || currentRank === 'free' || currentRank === 'unplayed') {
+    return null
+  }
+
+  // 次のランクのCPH閾値（低いほど良い）
+  const rankThresholds: { rank: CPHRank; maxCPH: number }[] = [
+    { rank: 'god', maxCPH: 50 },
+    { rank: 'gold', maxCPH: 200 },
+    { rank: 'silver', maxCPH: 500 },
+    { rank: 'bronze', maxCPH: 1500 },
+    { rank: 'luxury', maxCPH: 99999 }, // luxuryの次はbronze
+  ]
+
+  // 現在のランクのインデックスを見つける
+  const currentIndex = rankThresholds.findIndex((t) => t.rank === currentRank)
+  if (currentIndex <= 0) return null // god(0)の場合は次がない
+
+  // 次のランク（1つ上）
+  const nextRankInfo = rankThresholds[currentIndex - 1]
+  const nextMeta = getCPHMetaphor(nextRankInfo.rank)
+
+  // 次のランクに到達するのに必要な時間（分）
+  // CPH = price / hours → hours = price / CPH
+  const hoursNeeded = purchasePrice / nextRankInfo.maxCPH
+  const minutesNeeded = Math.max(0, hoursNeeded * 60 - playTimeMinutes)
+
+  return {
+    nextRank: nextRankInfo.rank,
+    nextEmoji: nextMeta.emoji,
+    nextLabel: nextMeta.label,
+    minutesNeeded: Math.round(minutesNeeded),
+  }
+}
+
+/**
+ * 現在のランク内での進捗率を計算（RPG経験値バー風）
+ * 例: Bronze (501-1500) で CPH=800 なら約70%
+ */
+export function getRankProgress(
+  currentRank: CPHRank,
+  purchasePrice: number,
+  playTimeMinutes: number
+): number {
+  // 特殊ケース: 最高ランク、無料、未プレイ
+  if (currentRank === 'god' || currentRank === 'free') return 100
+  if (currentRank === 'unplayed' || playTimeMinutes === 0) return 0
+
+  // ランクごとのCPH範囲（上限、下限）
+  // 下限 = 次のランクの閾値、上限 = 現在のランクの閾値
+  const rankBoundaries: Record<string, { min: number; max: number }> = {
+    luxury: { min: 1501, max: 10000 }, // 1501円以上（上限は仮に10000）
+    bronze: { min: 501, max: 1500 },   // 501-1500円
+    silver: { min: 201, max: 500 },    // 201-500円
+    gold: { min: 51, max: 200 },       // 51-200円
+  }
+
+  const boundaries = rankBoundaries[currentRank]
+  if (!boundaries) return 0
+
+  // 現在のCPHを計算
+  const playTimeHours = playTimeMinutes / 60
+  const currentCPH = purchasePrice / playTimeHours
+
+  // 進捗計算: 高いCPH（悪い）から低いCPH（良い）への進捗
+  // 100% = 次のランクに到達寸前（CPH = min）
+  // 0% = 現在のランクに入ったばかり（CPH = max）
+  const progress = ((boundaries.max - currentCPH) / (boundaries.max - boundaries.min)) * 100
+
+  return Math.min(Math.max(progress, 0), 100)
 }

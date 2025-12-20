@@ -60,7 +60,7 @@ export default async function DashboardPage() {
             マイダッシュボード
           </h1>
           <p className="text-text-secondary mt-1">
-            ゲームの投資とプレイ時間を管理
+            遊べば遊ぶほど安くなる。目指せ「💎 実質無料」！
           </p>
         </div>
         <AddGameButton />

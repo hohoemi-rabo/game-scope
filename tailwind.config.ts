@@ -25,6 +25,13 @@ const config: Config = {
     'from-[#00c896]', 'to-[#06b6d4]',
     'from-[#06b6d4]', 'to-[#00c896]',
     'hover:border-[#06b6d4]/20', 'hover:border-[#f59e0b]/20',
+    // CPHランク用カラークラス（プログレスバー）
+    'bg-emerald-500', 'bg-emerald-900/30', 'border-emerald-500/30', 'text-emerald-400',
+    'bg-yellow-500', 'bg-yellow-900/30', 'border-yellow-500/30', 'text-yellow-400',
+    'bg-orange-500', 'bg-orange-900/30', 'border-orange-500/30', 'text-orange-400',
+    'bg-rose-500', 'bg-rose-900/30', 'border-rose-500/30', 'text-rose-500',
+    'bg-cyan-500', 'bg-cyan-900/30', 'border-cyan-500/30', 'text-cyan-400',
+    'bg-gray-600', 'bg-gray-800/50', 'border-gray-600/30', 'text-gray-500',
   ],
   theme: {
     extend: {
