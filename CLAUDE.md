@@ -28,6 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Supabase Auth** - Google OAuth認証
 - **Row Level Security (RLS)** - ユーザーデータの行レベルセキュリティ
 - **Server Actions** - ポートフォリオCRUD操作
+- **DeepL API** - 日本語→英語翻訳（ゲーム検索用）
 
 ## 重要な開発コマンド
 
@@ -390,6 +391,7 @@ OPENCRITIC_API_KEY=     # OpenCritic API (RapidAPI経由)
 RAWG_API_KEY=           # RAWG API
 TWITCH_CLIENT_ID=       # Twitch API
 TWITCH_CLIENT_SECRET=   # Twitch API
+DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳）
 ```
 
 ## 開発ワークフロー
@@ -422,8 +424,16 @@ TWITCH_CLIENT_SECRET=   # Twitch API
 
 **主要コンポーネント**:
 - `src/app/components/auth/` - 認証UI（LoginButton, UserMenu）
-- `src/app/components/dashboard/` - ダッシュボード（Summary, GameList, GameListItem, AddGameButton）
-- `src/app/components/portfolio/` - ポートフォリオ操作（AddGameModal, EditGameModal, DeleteConfirmDialog等）
+- `src/app/components/dashboard/` - ダッシュボード
+  - `DashboardSummary` - サマリーカード（総投資額、総プレイ時間、平均時間単価）+ ランク表ツールチップ
+  - `GameList` - ゲーム一覧
+  - `GameListItem` - 投資アプリ風UIのゲームカード（CPH、プログレスバー、メタファー）
+  - `AddGameButton` - ゲーム追加ボタン
+- `src/app/components/portfolio/` - ポートフォリオ操作
+  - `AddGameModal` - ゲーム追加モーダル（検索/手動登録）
+  - `SearchGamesStep` - RAWG検索（DeepL翻訳対応）
+  - `ManualEntryStep` - 手動登録フォーム
+  - `EditGameModal`, `DeleteConfirmDialog` - 編集・削除UI
 
 **Server Actions** (`src/app/actions/portfolio.ts`):
 - `createPortfolioEntry` - ゲーム登録
@@ -431,23 +441,35 @@ TWITCH_CLIENT_SECRET=   # Twitch API
 - `deletePortfolioEntry` - ゲーム削除
 
 **API Routes**:
-- `/api/games/search` - RAWGゲーム検索
-- `/api/games/register` - ゲーム登録（DB upsert）
+- `/api/games/search` - RAWGゲーム検索（DeepL翻訳対応）
+- `/api/games/register` - ゲーム登録（DB upsert、手動登録対応）
 
 **CPH計算** (`src/lib/utils/cph.ts`):
 - `calculateCPH()` - 個別ゲームのCPH計算
 - `calculateAverageCPH()` - 平均CPH計算
+- `getRankProgress()` - ランク内進捗率計算（RPG経験値バー風）
+- `getNextRankInfo()` - 次のランクまでの情報取得
+- `getCPHMetaphor()` - ランク別メタファー取得
+- `getStockColor()` - ランク別カラー/アイコン取得
+- `formatPlayTime()` - プレイ時間フォーマット（1.0時間→1時間）
 
 **CPHランク定義**:
-| ランク | CPH範囲 | メッセージ |
-|--------|---------|-----------|
-| 💎 God Tier | 0〜50円 | 実質無料 |
-| 🥇 Gold Tier | 51〜200円 | 超優良投資 |
-| 🥈 Silver Tier | 201〜500円 | 映画館より安い |
-| 🥉 Bronze Tier | 501〜1500円 | 適正価格 |
-| 💸 Luxury | 1501円〜 | 贅沢な遊び |
-| 🎁 Free | サブスク/無料 | サブスク/無料 |
-| 📚 Unplayed | 未プレイ | 未プレイ |
+| ランク | CPH範囲 | メタファー | アイコン |
+|--------|---------|-----------|---------|
+| 💎 God Tier | 0〜50円 | 実質無料 | 🏆 |
+| 🥇 Gold Tier | 51〜200円 | 缶コーヒー級 | 📉 |
+| 🥈 Silver Tier | 201〜500円 | ランチ級 | 📉 |
+| 🥉 Bronze Tier | 501〜1500円 | 映画館級 | 📉 |
+| 💸 Luxury | 1501円〜 | 高級ディナー級 | 📉 |
+| 🎁 Free | サブスク/無料 | 完全無料 | 🎁 |
+| 📦 Unplayed | 未プレイ | 未開封 | 📦 |
+
+**ダッシュボードUI（投資アプリ風）**:
+- キャッチコピー: 「遊べば遊ぶほど安くなる。目指せ『💎 実質無料』！」
+- 平均時間単価カード + ランク表ツールチップ（?ボタン）
+- CPHカラーコーディング（緑=良い、赤=悪い）
+- RPG経験値バー風プログレスバー（次のランクまでの進捗表示）
+- 📉アイコン（遊ぶほど下がるポジティブ表現）
 
 ## 参考資料
 
