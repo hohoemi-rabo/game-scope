@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import GameSelectStep from './GameSelectStep'
 import PopularGamesStep from './PopularGamesStep'
 import SearchGamesStep from './SearchGamesStep'
+import ManualEntryStep from './ManualEntryStep'
 import GameDetailsForm from './GameDetailsForm'
 
-type Step = 'select' | 'popular' | 'search' | 'details'
+type Step = 'select' | 'popular' | 'search' | 'manual' | 'details'
 
 interface SelectedGame {
   id: string
@@ -74,6 +75,8 @@ export default function AddGameModal({ isOpen, onClose }: AddGameModalProps) {
         return '人気ゲームから選ぶ'
       case 'search':
         return 'ゲームを検索'
+      case 'manual':
+        return '手動で登録'
       case 'details':
         return '詳細を入力'
     }
@@ -136,6 +139,14 @@ export default function AddGameModal({ isOpen, onClose }: AddGameModalProps) {
             <SearchGamesStep
               onSelect={handleGameSelect}
               onBack={() => setStep('select')}
+              onManualEntry={() => setStep('manual')}
+            />
+          )}
+
+          {step === 'manual' && (
+            <ManualEntryStep
+              onSelect={handleGameSelect}
+              onBack={() => setStep('search')}
             />
           )}
 
