@@ -20,7 +20,7 @@ export const createServerClient = () => {
 }
 
 /**
- * 高評価ゲーム一覧を取得（メタスコア順）
+ * 高評価ゲーム一覧を取得（ランキング順）
  * React の cache() でメモ化されるため、同一リクエスト内で重複実行されない
  */
 export const getTopGames = cache(async (limit: number = 20) => {
@@ -29,7 +29,8 @@ export const getTopGames = cache(async (limit: number = 20) => {
   const { data, error } = await supabase
     .from('games')
     .select('*')
-    .order('metascore', { ascending: false })
+    .not('ranking', 'is', null) // ランキング圏内のみ
+    .order('ranking', { ascending: true }) // 1位から順に
     .limit(limit)
 
   if (error) {

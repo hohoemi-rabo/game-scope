@@ -4,9 +4,11 @@
  * 実行頻度: 1日1回（午前3時 JST）
  *
  * 処理内容:
- * 1. OpenCritic APIから最新トップ60ゲームを取得（20件×3回、skipパラメータ使用）
- * 2. 各ゲームについてRAWGで検索し、説明文とジャンルを補完
- * 3. Supabaseに保存（既存データは削除して再作成）
+ * 1. 全ゲームのrankingをNULLにリセット（圏外扱い）
+ * 2. OpenCritic APIから最新トップ60ゲームを取得
+ * 3. 各ゲームについてRAWGで検索し、説明文とジャンルを補完
+ * 4. Supabaseにupsert（既存は更新、新規は挿入）
+ * 5. スマート削除（ranking IS NULL かつ 誰も使っていないゲームを削除）
  *
  * APIリクエスト数:
  * - OpenCritic: 3リクエスト（1日1回実行で月90リクエスト、無料枠100内）
@@ -236,34 +238,39 @@ serve(async (_req) => {
     }
 
     console.log('🚀 OpenCritic + RAWG ハイブリッド同期開始\n')
-    console.log('⚠️  注意: 既存のgamesテーブルを全削除してハイブリッドデータに置き換えます\n')
+    console.log('📋 処理フロー: リセット → Upsert → スマート削除\n')
     console.log('='.repeat(60) + '\n')
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // 1. OpenCritic APIからトップ60ゲームを取得
+    // ステップ1: 全ゲームのrankingをNULLにリセット
+    console.log('🔄 ステップ1: 全ゲームのランキングをリセット中...\n')
+    const { error: resetError } = await supabase
+      .from('games')
+      .update({ ranking: null })
+      .neq('id', '00000000-0000-0000-0000-000000000000') // 全行対象（安全装置）
+
+    if (resetError) {
+      throw new Error(`リセットエラー: ${resetError.message}`)
+    }
+    console.log('✅ ランキングをリセットしました\n')
+
+    // ステップ2: OpenCritic APIからトップ60ゲームを取得
+    console.log('📡 ステップ2: OpenCritic APIからデータ取得中...\n')
     const opencriticGames = await fetchOpenCriticGames(opencriticApiKey)
 
-    // 2. 既存データを全削除
-    console.log('🗑️  既存のgamesテーブルを全削除中...\n')
-    const { error: deleteError } = await supabase
-      .from('games')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000') // 全削除（ダミー条件）
-
-    if (deleteError) {
-      throw new Error(`削除エラー: ${deleteError.message}`)
-    }
-
-    console.log('✅ 既存データを削除しました\n')
     console.log('='.repeat(60) + '\n')
 
-    // 3. 各ゲームを処理
-    let insertedCount = 0
+    // ステップ3: 各ゲームを処理してUpsert
+    console.log('💾 ステップ3: ゲームデータをUpsert中...\n')
+    let upsertedCount = 0
     let errorCount = 0
 
-    for (const ocGame of opencriticGames) {
-      console.log(`\n🎮 処理中: ${ocGame.name} (OpenCritic ID: ${ocGame.id})`)
+    for (let i = 0; i < opencriticGames.length; i++) {
+      const ocGame = opencriticGames[i]
+      const ranking = i + 1 // 1〜60の順位
+
+      console.log(`\n🎮 処理中 [${ranking}/60]: ${ocGame.name} (OpenCritic ID: ${ocGame.id})`)
 
       try {
         // OpenCriticのURLからslugを抽出
@@ -285,12 +292,12 @@ serve(async (_req) => {
         // APIレート制限対策（少し待機）
         await new Promise((resolve) => setTimeout(resolve, 300))
 
-        // Supabase形式に変換
+        // Supabase形式に変換（upsert用）
         const gameData = {
+          opencritic_numeric_id: ocGame.id, // ユニークキー
+          opencritic_id: slug,
           title_ja: null, // 後で手動で日本語化
           title_en: ocGame.name,
-          opencritic_id: slug,
-          opencritic_numeric_id: ocGame.id,
           platforms: platforms,
           metascore: Math.round(ocGame.topCriticScore),
           review_count: ocGame.numReviews,
@@ -298,49 +305,63 @@ serve(async (_req) => {
           release_date: ocGame.firstReleaseDate || null,
           description_en: rawgData.description_en,
           genres: rawgData.genres.length > 0 ? rawgData.genres : null,
-          created_at: new Date().toISOString(),
+          ranking: ranking, // ★ 順位を設定
           updated_at: new Date().toISOString(),
         }
 
         console.log(`   📊 データサマリー:`)
         console.log(`      - タイトル: ${gameData.title_en}`)
         console.log(`      - スコア: ${gameData.metascore}`)
+        console.log(`      - 順位: ${ranking}位`)
         console.log(`      - レビュー数: ${gameData.review_count}`)
         console.log(`      - プラットフォーム: ${platforms.slice(0, 3).join(', ')}`)
-        console.log(`      - OpenCriticリンク: ✓`)
-        console.log(`      - 説明文: ${rawgData.description_en ? '✓' : '✗'}`)
-        console.log(`      - ジャンル: ${rawgData.genres.length > 0 ? '✓' : '✗'}`)
-        console.log(`      - サムネイル: ${thumbnailUrl ? '✓' : '✗'}`)
 
-        // Supabaseに挿入
-        const { error: insertError } = await supabase.from('games').insert(gameData)
+        // Supabaseにupsert（opencritic_numeric_idで判定）
+        const { error: upsertError } = await supabase
+          .from('games')
+          .upsert(gameData, {
+            onConflict: 'opencritic_numeric_id',
+            ignoreDuplicates: false,
+          })
 
-        if (insertError) {
-          console.log(`   ❌ 挿入エラー: ${insertError.message}`)
+        if (upsertError) {
+          console.log(`   ❌ Upsertエラー: ${upsertError.message}`)
           errorCount++
           continue
         }
 
-        console.log(`   ✅ 挿入完了`)
-        insertedCount++
+        console.log(`   ✅ Upsert完了`)
+        upsertedCount++
       } catch (error) {
         console.log(`   ❌ エラー: ${error}`)
         errorCount++
       }
     }
 
-    // 4. 結果サマリー
+    // ステップ4: スマート削除（孤児データのお掃除）
+    console.log('\n' + '='.repeat(60))
+    console.log('\n🧹 ステップ4: スマート削除（孤児データのお掃除）...\n')
+
+    const { error: cleanError } = await supabase.rpc('delete_orphaned_games')
+
+    if (cleanError) {
+      console.log(`⚠️  削除処理でエラー: ${cleanError.message}`)
+    } else {
+      console.log('✅ 孤児データを削除しました')
+    }
+
+    // 結果サマリー
     const summary = {
       timestamp: new Date().toISOString(),
       opencritic_fetched: opencriticGames.length,
-      supabase_inserted: insertedCount,
+      supabase_upserted: upsertedCount,
       errors: errorCount,
     }
 
     console.log('\n' + '='.repeat(60))
     console.log('\n📊 同期結果サマリー\n')
     console.log(`   OpenCritic取得: ${opencriticGames.length}件`)
-    console.log(`   Supabase挿入: ${insertedCount}件`)
+    console.log(`   Supabase Upsert: ${upsertedCount}件`)
     console.log(`   エラー: ${errorCount}件`)
     console.log('\n✅ 同期完了！')
 
@@ -348,7 +369,7 @@ serve(async (_req) => {
     await supabase.from('operation_logs').insert({
       operation_type: 'auto_sync',
       status: 'success',
-      message: `${insertedCount}件のゲームを同期しました`,
+      message: `${upsertedCount}件のゲームを同期しました`,
       details: summary,
     })
 
