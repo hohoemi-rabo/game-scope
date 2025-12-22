@@ -27,13 +27,12 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // ゲームデータ取得
-    // ソート順を安定させるため、metascoreとidの2つでソート
+    // ゲームデータ取得（Top60のみ、rankingでソート）
     const { data: games, error } = await supabase
       .from('games')
       .select('*')
-      .order('metascore', { ascending: false, nullsFirst: false })
-      .order('id', { ascending: true })
+      .not('ranking', 'is', null)
+      .order('ranking', { ascending: true })
       .range(offset, offset + limit - 1)
 
     if (error) {
@@ -44,10 +43,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // さらにデータがあるかチェック
+    // さらにデータがあるかチェック（Top60のみカウント）
     const { count } = await supabase
       .from('games')
       .select('*', { count: 'exact', head: true })
+      .not('ranking', 'is', null)
 
     // 実際に取得した件数で判断（取得件数がlimitと同じなら次がある可能性）
     const hasMore = count ? offset + (games?.length || 0) < count : false

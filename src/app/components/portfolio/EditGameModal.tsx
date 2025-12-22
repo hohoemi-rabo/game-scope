@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { updatePortfolioEntry } from '@/app/actions/portfolio'
 import { STATUS_INFO, type GameStatus, type PortfolioWithGame } from '@/types/portfolio'
+import { PLATFORM_MASTER } from '@/constants/platforms'
 
 interface EditGameModalProps {
   portfolio: PortfolioWithGame
@@ -25,6 +26,7 @@ export default function EditGameModal({
   const [playTimeHours, setPlayTimeHours] = useState('')
   const [isSubscription, setIsSubscription] = useState(false)
   const [status, setStatus] = useState<GameStatus>('backlog')
+  const [platform, setPlatform] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,6 +37,7 @@ export default function EditGameModal({
       setPlayTimeHours(((portfolio.play_time_minutes ?? 0) / 60).toString())
       setIsSubscription(portfolio.is_subscription ?? false)
       setStatus((portfolio.status as GameStatus) || 'backlog')
+      setPlatform(portfolio.platform ?? '')
     }
   }, [portfolio])
 
@@ -61,6 +64,13 @@ export default function EditGameModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // プラットフォーム必須チェック
+    if (!platform) {
+      setError('プラットフォームを選択してください')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
@@ -71,6 +81,7 @@ export default function EditGameModal({
         playTimeMinutes: Math.round((parseFloat(playTimeHours) || 0) * 60),
         isSubscription,
         status,
+        platform,
       })
 
       if (!result.success) {
@@ -176,6 +187,27 @@ export default function EditGameModal({
                   サブスク / 無料で入手
                 </span>
               </label>
+            </div>
+
+            {/* プラットフォーム */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                プラットフォーム <span className="text-danger">*</span>
+              </label>
+              <select
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2
+                           text-text-primary focus:border-accent focus:outline-none
+                           appearance-none cursor-pointer"
+              >
+                <option value="">選択してください</option>
+                {PLATFORM_MASTER.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.icon} {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* プレイ時間 */}

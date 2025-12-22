@@ -12,6 +12,7 @@ interface CreatePortfolioInput {
   playTimeMinutes: number
   isSubscription: boolean
   status: 'playing' | 'completed' | 'dropped' | 'backlog'
+  platform: string
 }
 
 /**
@@ -74,6 +75,7 @@ export async function createPortfolioEntry(
       play_time_minutes: input.playTimeMinutes,
       is_subscription: input.isSubscription,
       status: input.status,
+      platform: input.platform,
     })
     .select('id')
     .single()
@@ -98,6 +100,7 @@ interface UpdatePortfolioInput {
   playTimeMinutes: number
   isSubscription: boolean
   status: 'playing' | 'completed' | 'dropped' | 'backlog'
+  platform: string
 }
 
 /**
@@ -157,6 +160,7 @@ export async function updatePortfolioEntry(
       play_time_minutes: input.playTimeMinutes,
       is_subscription: input.isSubscription,
       status: input.status,
+      platform: input.platform,
       updated_at: new Date().toISOString(),
     })
     .eq('id', input.id)

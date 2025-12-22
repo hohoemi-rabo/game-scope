@@ -25,6 +25,7 @@ export type Database = {
           opencritic_id: string | null
           opencritic_numeric_id: number | null
           platforms: string[] | null
+          ranking: number | null
           rawg_id: number | null
           release_date: string | null
           review_count: number | null
@@ -45,6 +46,7 @@ export type Database = {
           opencritic_id?: string | null
           opencritic_numeric_id?: number | null
           platforms?: string[] | null
+          ranking?: number | null
           rawg_id?: number | null
           release_date?: string | null
           review_count?: number | null
@@ -65,6 +67,7 @@ export type Database = {
           opencritic_id?: string | null
           opencritic_numeric_id?: number | null
           platforms?: string[] | null
+          ranking?: number | null
           rawg_id?: number | null
           release_date?: string | null
           review_count?: number | null
@@ -199,6 +202,7 @@ export type Database = {
           game_id: string
           id: string
           is_subscription: boolean | null
+          platform: string | null
           play_time_minutes: number | null
           purchase_price: number | null
           status: string | null
@@ -210,6 +214,7 @@ export type Database = {
           game_id: string
           id?: string
           is_subscription?: boolean | null
+          platform?: string | null
           play_time_minutes?: number | null
           purchase_price?: number | null
           status?: string | null
@@ -221,6 +226,7 @@ export type Database = {
           game_id?: string
           id?: string
           is_subscription?: boolean | null
+          platform?: string | null
           play_time_minutes?: number | null
           purchase_price?: number | null
           status?: string | null
@@ -242,7 +248,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_orphaned_games: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

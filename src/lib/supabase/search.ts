@@ -27,6 +27,7 @@ export const searchGames = cache(async ({
   let dbQuery = supabase
     .from('games')
     .select('*')
+    .not('ranking', 'is', null) // Top60のみ
     .gte('metascore', minScore)
     .lte('metascore', maxScore)
 
@@ -40,9 +41,9 @@ export const searchGames = cache(async ({
     dbQuery = dbQuery.overlaps('platforms', platforms)
   }
 
-  // ソートと制限
+  // ソートと制限（rankingでソート）
   dbQuery = dbQuery
-    .order('metascore', { ascending: false })
+    .order('ranking', { ascending: true })
     .limit(limit)
 
   const { data, error } = await dbQuery

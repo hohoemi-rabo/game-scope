@@ -6,6 +6,7 @@ interface SelectedGame {
   id: string
   title: string
   thumbnail: string | null
+  platforms: string[]
 }
 
 interface ManualEntryStepProps {
@@ -59,6 +60,7 @@ export default function ManualEntryStep({
         id: data.game_id,
         title: title.trim(),
         thumbnail: null,
+        platforms: [], // 手動登録はプラットフォーム情報なし
       })
     } catch (err) {
       console.error('Manual registration error:', err)

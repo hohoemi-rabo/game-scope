@@ -1,18 +1,17 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import GameSelectStep from './GameSelectStep'
-import PopularGamesStep from './PopularGamesStep'
 import SearchGamesStep from './SearchGamesStep'
 import ManualEntryStep from './ManualEntryStep'
 import GameDetailsForm from './GameDetailsForm'
 
-type Step = 'select' | 'popular' | 'search' | 'manual' | 'details'
+type Step = 'search' | 'manual' | 'details'
 
 interface SelectedGame {
   id: string
   title: string
   thumbnail: string | null
+  platforms: string[] // RAWGから取得したプラットフォーム一覧
 }
 
 interface AddGameModalProps {
@@ -25,12 +24,12 @@ interface AddGameModalProps {
  * ステップ形式でゲームを選択し、ポートフォリオに登録
  */
 export default function AddGameModal({ isOpen, onClose }: AddGameModalProps) {
-  const [step, setStep] = useState<Step>('select')
+  const [step, setStep] = useState<Step>('search')
   const [selectedGame, setSelectedGame] = useState<SelectedGame | null>(null)
 
   // モーダルを閉じる時にリセット
   const handleClose = useCallback(() => {
-    setStep('select')
+    setStep('search')
     setSelectedGame(null)
     onClose()
   }, [onClose])
@@ -69,10 +68,6 @@ export default function AddGameModal({ isOpen, onClose }: AddGameModalProps) {
   // ステップタイトル
   const getStepTitle = () => {
     switch (step) {
-      case 'select':
-        return 'ゲームを登録'
-      case 'popular':
-        return '人気ゲームから選ぶ'
       case 'search':
         return 'ゲームを検索'
       case 'manual':
@@ -121,24 +116,9 @@ export default function AddGameModal({ isOpen, onClose }: AddGameModalProps) {
 
         {/* コンテンツ */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-          {step === 'select' && (
-            <GameSelectStep
-              onSelectPopular={() => setStep('popular')}
-              onSelectSearch={() => setStep('search')}
-            />
-          )}
-
-          {step === 'popular' && (
-            <PopularGamesStep
-              onSelect={handleGameSelect}
-              onBack={() => setStep('select')}
-            />
-          )}
-
           {step === 'search' && (
             <SearchGamesStep
               onSelect={handleGameSelect}
-              onBack={() => setStep('select')}
               onManualEntry={() => setStep('manual')}
             />
           )}
@@ -155,10 +135,11 @@ export default function AddGameModal({ isOpen, onClose }: AddGameModalProps) {
               gameId={selectedGame.id}
               gameName={selectedGame.title}
               gameThumbnail={selectedGame.thumbnail}
+              rawgPlatforms={selectedGame.platforms}
               onSuccess={handleSuccess}
               onCancel={() => {
                 setSelectedGame(null)
-                setStep('select')
+                setStep('search')
               }}
             />
           )}

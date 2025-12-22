@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createPortfolioEntry } from '@/app/actions/portfolio'
+import { PLATFORM_MASTER } from '@/constants/platforms'
 
 type GameStatus = 'playing' | 'completed' | 'dropped' | 'backlog'
 
@@ -9,6 +10,7 @@ interface GameDetailsFormProps {
   gameId: string
   gameName: string
   gameThumbnail: string | null
+  rawgPlatforms?: string[] // RAWGから取得したプラットフォーム一覧（初期選択用）
   onSuccess: () => void
   onCancel: () => void
 }
@@ -17,22 +19,59 @@ interface GameDetailsFormProps {
  * Step 3: 詳細入力フォーム
  * 購入金額、プレイ時間、ステータスを入力
  */
+/**
+ * RAWGのプラットフォーム名からPLATFORM_MASTERのIDを推測
+ * 部分一致で判定（例: "PlayStation 5" → "ps5"）
+ */
+function guessInitialPlatform(rawgPlatforms: string[]): string {
+  const platformMappings: Record<string, string[]> = {
+    'pc': ['PC', 'Windows', 'Mac', 'Linux'],
+    'ps5': ['PlayStation 5'],
+    'ps4': ['PlayStation 4'],
+    'switch': ['Nintendo Switch'],
+    'xbox-series': ['Xbox Series'],
+    'xbox-one': ['Xbox One'],
+    'smartphone': ['iOS', 'Android'],
+  }
+
+  for (const rawgPlatform of rawgPlatforms) {
+    for (const [masterId, keywords] of Object.entries(platformMappings)) {
+      if (keywords.some(keyword => rawgPlatform.includes(keyword))) {
+        return masterId
+      }
+    }
+  }
+  return '' // マッチしない場合は空
+}
+
 export default function GameDetailsForm({
   gameId,
   gameName,
   gameThumbnail,
+  rawgPlatforms = [],
   onSuccess,
   onCancel,
 }: GameDetailsFormProps) {
+  // RAWGのプラットフォームから初期値を推測
+  const initialPlatform = guessInitialPlatform(rawgPlatforms)
+
   const [purchasePrice, setPurchasePrice] = useState('')
   const [playTimeHours, setPlayTimeHours] = useState('')
   const [isSubscription, setIsSubscription] = useState(false)
   const [status, setStatus] = useState<GameStatus>('backlog')
+  const [platform, setPlatform] = useState(initialPlatform)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // プラットフォーム必須チェック
+    if (!platform) {
+      setError('プラットフォームを選択してください')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
@@ -43,6 +82,7 @@ export default function GameDetailsForm({
         playTimeMinutes: Math.round((parseFloat(playTimeHours) || 0) * 60),
         isSubscription,
         status,
+        platform,
       })
 
       if (!result.success) {
@@ -107,6 +147,27 @@ export default function GameDetailsForm({
             サブスク / 無料で入手
           </span>
         </label>
+      </div>
+
+      {/* プラットフォーム */}
+      <div>
+        <label className="block text-sm font-medium text-text-secondary mb-2">
+          プラットフォーム <span className="text-danger">*</span>
+        </label>
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value)}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2
+                     text-text-primary focus:border-accent focus:outline-none
+                     appearance-none cursor-pointer"
+        >
+          <option value="">選択してください</option>
+          {PLATFORM_MASTER.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.icon} {p.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* プレイ時間 */}

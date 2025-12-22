@@ -29,22 +29,23 @@ export default async function HomePage() {
     )
 
     // 初期データ取得（20件）
-    // ソート順を安定させるため、metascoreとidの2つでソート
+    // ranking IS NOT NULL でTop60のみ、rankingでソート
     const { data: initialGames, error } = await supabase
       .from('games')
       .select('*')
-      .order('metascore', { ascending: false, nullsFirst: false })
-      .order('id', { ascending: true })
+      .not('ranking', 'is', null)
+      .order('ranking', { ascending: true })
       .limit(20)
 
     if (error) {
       throw error
     }
 
-    // 総件数取得（さらにデータがあるか判定）
+    // 総件数取得（Top60のみカウント）
     const { count } = await supabase
       .from('games')
       .select('*', { count: 'exact', head: true })
+      .not('ranking', 'is', null)
 
     const hasMore = count ? 20 < count : false
 

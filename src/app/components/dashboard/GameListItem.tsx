@@ -10,6 +10,7 @@ import {
   formatPlayTime,
 } from '@/lib/utils/cph'
 import { STATUS_INFO, type GameStatus, type PortfolioWithGame } from '@/types/portfolio'
+import { getPlatformIcon, getPlatformName } from '@/constants/platforms'
 
 interface GameListItemProps {
   portfolio: PortfolioWithGame
@@ -29,6 +30,7 @@ export default function GameListItem({
   const purchasePrice = portfolio.purchase_price ?? 0
   const playTimeMinutes = portfolio.play_time_minutes ?? 0
   const isSubscription = portfolio.is_subscription ?? false
+  const platform = portfolio.platform
 
   const { cph, rank } = calculateCPH(purchasePrice, playTimeMinutes, isSubscription)
   const stockColor = getStockColor(rank)
@@ -61,7 +63,13 @@ export default function GameListItem({
             <h3 className="font-bold text-text-primary truncate text-sm sm:text-base">
               {game.title_ja || game.title_en}
             </h3>
-            <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5">
+            <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5 flex-wrap">
+              {platform && (
+                <>
+                  <span>{getPlatformIcon(platform)} {getPlatformName(platform)}</span>
+                  <span className="text-gray-600">|</span>
+                </>
+              )}
               <span>{statusInfo.emoji} {statusInfo.label}</span>
               <span className="text-gray-600">|</span>
               <span>取得額: {isSubscription ? 'Free' : formatPrice(purchasePrice)}</span>

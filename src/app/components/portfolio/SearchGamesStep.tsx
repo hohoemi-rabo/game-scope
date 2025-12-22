@@ -7,20 +7,19 @@ interface SelectedGame {
   id: string
   title: string
   thumbnail: string | null
+  platforms: string[]
 }
 
 interface SearchGamesStepProps {
   onSelect: (game: SelectedGame) => void
-  onBack: () => void
   onManualEntry: () => void
 }
 
 /**
- * Step 2b: RAWGデータベースから検索
+ * RAWGデータベースからゲームを検索
  */
 export default function SearchGamesStep({
   onSelect,
-  onBack,
   onManualEntry,
 }: SearchGamesStepProps) {
   const [query, setQuery] = useState('')
@@ -43,6 +42,7 @@ export default function SearchGamesStep({
         id: result.game_id,
         title: game.title_en,
         thumbnail: game.thumbnail_url,
+        platforms: game.platforms,
       })
     } catch (err) {
       console.error('Failed to register game:', err)
@@ -54,19 +54,6 @@ export default function SearchGamesStep({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onBack}
-          className="text-text-secondary hover:text-text-primary transition-colors
-                     flex items-center gap-1"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          戻る
-        </button>
-      </div>
-
       {/* 検索入力 */}
       <div className="relative">
         <input
