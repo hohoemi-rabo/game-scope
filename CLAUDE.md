@@ -132,6 +132,7 @@ Next.js Server Components
 - `play_time_minutes` (INTEGER): プレイ時間（分）
 - `is_subscription` (BOOLEAN): サブスク/無料フラグ
 - `status` (TEXT): playing / completed / dropped / backlog
+- `platform` (TEXT): プラットフォームID（PLATFORM_MASTERのid）
 
 **RLS必須**: ユーザーは自分のデータのみアクセス可能
 
@@ -447,11 +448,19 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 **CPH計算** (`src/lib/utils/cph.ts`):
 - `calculateCPH()` - 個別ゲームのCPH計算
 - `calculateAverageCPH()` - 平均CPH計算
+- `getDisplayRank()` - ステータスに応じた表示ランク決定（Premium/LossCut対応）
 - `getRankProgress()` - ランク内進捗率計算（RPG経験値バー風）
 - `getNextRankInfo()` - 次のランクまでの情報取得
 - `getCPHMetaphor()` - ランク別メタファー取得
 - `getStockColor()` - ランク別カラー/アイコン取得
 - `formatPlayTime()` - プレイ時間フォーマット（1.0時間→1時間）
+
+**プラットフォーム選択** (`src/constants/platforms.ts`):
+- `PLATFORM_MASTER` - 固定リスト方式（8種類）
+  - pc, ps5, ps4, switch, xbox-series, xbox-one, smartphone, retro
+- `getPlatformById()`, `getPlatformIcon()`, `getPlatformName()` - ヘルパー関数
+- RAWGプラットフォームからの自動マッチング機能（初期選択補助）
+- 設計ドキュメント: `docs/platform-selection-design.md`
 
 **CPHランク定義**:
 | ランク | CPH範囲 | メタファー | アイコン |
@@ -460,9 +469,17 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 | 🥇 Gold Tier | 51〜200円 | 缶コーヒー級 | 📉 |
 | 🥈 Silver Tier | 201〜500円 | ランチ級 | 📉 |
 | 🥉 Bronze Tier | 501〜1500円 | 映画館級 | 📉 |
-| 💸 Luxury | 1501円〜 | 高級ディナー級 | 📉 |
+| 💸 Luxury | 1501円〜 | 元が取れていません | 📉 |
+| 🍷 Premium | Luxury + Completed | 極上の体験 | ✨ |
+| 📉 Loss Cut | Luxury + Dropped | 損切り | 📉 |
 | 🎁 Free | サブスク/無料 | 完全無料 | 🎁 |
 | 📦 Unplayed | 未プレイ | 未開封 | 📦 |
+
+**CPH Density Rule（濃密ゲーム救済ルール）**:
+- 高単価（Luxury）でも「クリア済み」なら**Premium（紫色）**に昇格
+- 高単価で「やめた」なら**Loss Cut（暗い赤）**で損切り扱い
+- 両ケースでプログレスバー非表示（これ以上遊ぶ必要がない）
+- 設計ドキュメント: `docs/cph-density-rule-design.md`
 
 **ダッシュボードUI（投資アプリ風）**:
 - キャッチコピー: 「遊べば遊ぶほど安くなる。目指せ『💎 実質無料』！」
@@ -471,11 +488,25 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 - RPG経験値バー風プログレスバー（次のランクまでの進捗表示）
 - 📉アイコン（遊ぶほど下がるポジティブ表現）
 
+**無料プラン制限**:
+- ゲーム登録上限: **3タイトル**まで
+- 4つ目以降は有料プラン（未実装）
+- 上限到達時: 🔒「無料プランの上限に達しました」モーダル表示
+- 実装: `AddGameButton.tsx` の `FREE_TIER_LIMIT` 定数
+
+**本番環境のログイン制限**:
+- localhost: 通常のGoogleログイン可能（開発用）
+- 本番環境: 🚧「現在開発中です」モーダル表示
+- Google Cloud Console設定完了後に本番ログイン有効化予定
+- 実装: `LoginButton.tsx` の `isDevelopment()` 関数
+
 ## 参考資料
 
 - [REQUIREMENTS.md](./REQUIREMENTS.md) - Phase 1 要件定義書
 - [docs/REQUIREMENTS_PHASE2.md](./docs/REQUIREMENTS_PHASE2.md) - Phase 2 (Gaming ROI) 要件定義書
 - [docs/tickets/](./docs/tickets/) - 機能別開発チケット
 - [docs/自動更新システム.md](./docs/自動更新システム.md) - 運用ドキュメント
+- [docs/platform-selection-design.md](./docs/platform-selection-design.md) - プラットフォーム選択設計
+- [docs/cph-density-rule-design.md](./docs/cph-density-rule-design.md) - CPH Density Rule設計
 - [Next.js 15 Documentation](https://nextjs.org/docs)
 - [Supabase Documentation](https://supabase.com/docs)
