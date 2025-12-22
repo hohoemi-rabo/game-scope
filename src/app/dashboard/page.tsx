@@ -63,7 +63,7 @@ export default async function DashboardPage() {
             遊べば遊ぶほど安くなる。目指せ「💎 実質無料」！
           </p>
         </div>
-        <AddGameButton />
+        <AddGameButton gameCount={typedPortfolios.length} />
       </header>
 
       {/* サマリーカード */}

@@ -2,6 +2,7 @@
 
 import {
   calculateCPH,
+  getDisplayRank,
   getStockColor,
   getCPHMetaphor,
   getNextRankInfo,
@@ -32,14 +33,21 @@ export default function GameListItem({
   const isSubscription = portfolio.is_subscription ?? false
   const platform = portfolio.platform
 
+  const status = portfolio.status as GameStatus | null
   const { cph, rank } = calculateCPH(purchasePrice, playTimeMinutes, isSubscription)
-  const stockColor = getStockColor(rank)
-  const metaphor = getCPHMetaphor(rank)
+
+  // ステータスに応じた表示ランク（Luxury + Completed → Premium, Luxury + Dropped → LossCut）
+  const displayRank = getDisplayRank(rank, status)
+  const stockColor = getStockColor(displayRank)
+  const metaphor = getCPHMetaphor(displayRank)
   const nextRank = getNextRankInfo(rank, purchasePrice, playTimeMinutes)
-  const statusInfo = STATUS_INFO[(portfolio.status as GameStatus) || 'backlog']
+  const statusInfo = STATUS_INFO[status || 'backlog']
 
   // RPG経験値バー風の進捗（現在のランク内での進捗）
   const progressPercent = getRankProgress(rank, purchasePrice, playTimeMinutes)
+
+  // プログレスバー非表示条件：Premium または LossCut（これ以上遊ぶ必要がない）
+  const hideProgressBar = displayRank === 'premium' || displayRank === 'lossCut'
 
   return (
     <div className="p-4 bg-gray-900/50 border border-gray-800 rounded-xl
@@ -121,14 +129,27 @@ export default function GameListItem({
       {/* プログレスバー + ランクアップ情報（有料ゲームのみ） */}
       {!isSubscription && purchasePrice > 0 && (
         <div>
-          <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-1.5">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${stockColor.barColor}`}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+          {/* プログレスバー（Premium/LossCutの場合は非表示） */}
+          {!hideProgressBar && (
+            <div className="h-2 bg-gray-700 rounded-full overflow-hidden mb-1.5">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${stockColor.barColor}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          )}
           <div className="text-xs">
-            {rank === 'god' ? (
+            {/* Premium: クリア済み高単価ゲーム */}
+            {displayRank === 'premium' ? (
+              <span className="text-purple-400">
+                🎉 完走おめでとうございます！最高に濃密な {formatPlayTime(playTimeMinutes)} でした。
+              </span>
+            ) : displayRank === 'lossCut' ? (
+              /* LossCut: ドロップした高単価ゲーム */
+              <span className="text-rose-300">
+                相性が悪かったようです。次の投資へ切り替えましょう。
+              </span>
+            ) : rank === 'god' ? (
               <span className="text-emerald-400 font-medium">
                 🏆 最高ランク達成！このまま遊び尽くそう
               </span>

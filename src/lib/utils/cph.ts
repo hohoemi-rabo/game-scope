@@ -12,9 +12,16 @@ export interface CPHResult {
 }
 
 /**
- * コスパランク
+ * コスパランク（計算用）
  */
 export type CPHRank = 'god' | 'gold' | 'silver' | 'bronze' | 'luxury' | 'free' | 'unplayed'
+
+/**
+ * 表示用ランク（ステータスによる特例を含む）
+ * - premium: Luxury + Completed の場合（極上の体験）
+ * - lossCut: Luxury + Dropped の場合（損切り）
+ */
+export type DisplayRank = CPHRank | 'premium' | 'lossCut'
 
 /**
  * ランク情報
@@ -241,11 +248,28 @@ export function calculateRecoveryProgress(
 }
 
 /**
+ * ステータスに基づいて表示用ランクを決定
+ * Luxury + Completed → Premium（極上の体験）
+ * Luxury + Dropped → LossCut（損切り）
+ */
+export function getDisplayRank(rank: CPHRank, status: string | null): DisplayRank {
+  if (rank === 'luxury') {
+    if (status === 'completed') {
+      return 'premium'
+    }
+    if (status === 'dropped') {
+      return 'lossCut'
+    }
+  }
+  return rank
+}
+
+/**
  * 株式風のカラークラス（CPHの良し悪しで色分け）
  * 低CPH = 緑（良い）、高CPH = 赤（悪い）
  * icon: 📉 = 遊ぶほど下がる（ポジティブ）
  */
-export function getStockColor(rank: CPHRank): {
+export function getStockColor(rank: DisplayRank): {
   textColor: string
   bgColor: string
   borderColor: string
@@ -293,6 +317,24 @@ export function getStockColor(rank: CPHRank): {
         barColor: 'bg-rose-500',
         icon: '📉', // 遊んで下げよう
       }
+    case 'premium':
+      // Luxury + Completed: 紫（極上の体験）
+      return {
+        textColor: 'text-purple-400',
+        bgColor: 'bg-purple-900/30',
+        borderColor: 'border-purple-500/30',
+        barColor: 'bg-purple-500',
+        icon: '✨', // 完走！
+      }
+    case 'lossCut':
+      // Luxury + Dropped: 暗い赤（損切り）
+      return {
+        textColor: 'text-rose-300',
+        bgColor: 'bg-rose-950/30',
+        borderColor: 'border-rose-800/30',
+        barColor: 'bg-rose-800',
+        icon: '📉', // 損切り
+      }
     case 'free':
       return {
         textColor: 'text-cyan-400',
@@ -315,7 +357,7 @@ export function getStockColor(rank: CPHRank): {
 /**
  * CPHランクに対応するメタファー（アイコン付き）
  */
-export function getCPHMetaphor(rank: CPHRank): { emoji: string; label: string } {
+export function getCPHMetaphor(rank: DisplayRank): { emoji: string; label: string } {
   switch (rank) {
     case 'god':
       return { emoji: '💎', label: '実質無料' }
@@ -326,7 +368,11 @@ export function getCPHMetaphor(rank: CPHRank): { emoji: string; label: string } 
     case 'bronze':
       return { emoji: '🎬', label: '映画館級' }
     case 'luxury':
-      return { emoji: '🍷', label: '高級ディナー級' }
+      return { emoji: '💸', label: '元が取れていません' }
+    case 'premium':
+      return { emoji: '🍷', label: '極上の体験' }
+    case 'lossCut':
+      return { emoji: '📉', label: '損切り' }
     case 'free':
       return { emoji: '🎁', label: '完全無料' }
     case 'unplayed':
