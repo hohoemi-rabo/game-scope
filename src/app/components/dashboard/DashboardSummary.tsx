@@ -23,7 +23,7 @@ function RankLegend({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
   ]
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-2 z-10">
+    <div className="absolute top-full left-0 right-0 mt-2 z-30">
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-bold text-text-primary">ランク表</h4>

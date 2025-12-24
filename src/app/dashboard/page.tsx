@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createAuthServerClient } from '@/lib/supabase/server-auth'
 import Container from '@/app/components/Container'
 import DashboardSummary from '@/app/components/dashboard/DashboardSummary'
+import MarketInsight from '@/app/components/dashboard/MarketInsight'
 import GameList from '@/app/components/dashboard/GameList'
 import AddGameButton from '@/app/components/dashboard/AddGameButton'
 import type { PortfolioWithGame } from '@/types/portfolio'
@@ -68,6 +69,9 @@ export default async function DashboardPage() {
 
       {/* サマリーカード */}
       <DashboardSummary portfolios={typedPortfolios} />
+
+      {/* もしも換算（含み益） */}
+      <MarketInsight portfolios={typedPortfolios} />
 
       {/* ゲームリスト */}
       <section className="mt-10">
