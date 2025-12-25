@@ -231,3 +231,79 @@ export async function deletePortfolioEntry(
 
   return { success: true }
 }
+
+/**
+ * メモ更新入力型
+ */
+interface UpdateMemoInput {
+  portfolioId: string
+  memo: string | null
+}
+
+/**
+ * メモ更新結果型
+ */
+type UpdateMemoResult =
+  | { success: true }
+  | { success: false; error: string }
+
+/**
+ * 投資戦略メモを更新
+ * - 200文字制限
+ * - null で削除
+ */
+export async function updatePortfolioMemo(
+  input: UpdateMemoInput
+): Promise<UpdateMemoResult> {
+  const supabase = await createAuthServerClient()
+
+  // ユーザー認証確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, error: 'ログインが必要です' }
+  }
+
+  // バリデーション
+  if (!input.portfolioId) {
+    return { success: false, error: 'IDが指定されていません' }
+  }
+
+  // 文字数制限（200文字）
+  const MAX_MEMO_LENGTH = 200
+  if (input.memo && input.memo.length > MAX_MEMO_LENGTH) {
+    return { success: false, error: `メモは${MAX_MEMO_LENGTH}文字以内で入力してください` }
+  }
+
+  // 所有者確認
+  const { data: existing } = await supabase
+    .from('user_portfolios')
+    .select('id, user_id')
+    .eq('id', input.portfolioId)
+    .single()
+
+  if (!existing || existing.user_id !== user.id) {
+    return { success: false, error: '権限がありません' }
+  }
+
+  // 更新実行
+  const { error } = await supabase
+    .from('user_portfolios')
+    .update({
+      memo: input.memo?.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.portfolioId)
+
+  if (error) {
+    console.error('Memo update error:', error)
+    return { success: false, error: 'メモの更新に失敗しました' }
+  }
+
+  revalidatePath('/dashboard')
+
+  return { success: true }
+}

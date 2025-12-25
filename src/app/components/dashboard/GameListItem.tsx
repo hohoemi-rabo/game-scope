@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   calculateCPH,
   getDisplayRank,
@@ -12,11 +13,46 @@ import {
 } from '@/lib/utils/cph'
 import { STATUS_INFO, type GameStatus, type PortfolioWithGame } from '@/types/portfolio'
 import { getPlatformIcon, getPlatformName } from '@/constants/platforms'
+import { updatePortfolioMemo } from '@/app/actions/portfolio'
+
+/**
+ * ステータス別メモ設定
+ * - 英語ラベルを削除し、日本語でダイレクトに「何を書くべきか」を伝える
+ */
+const MEMO_CONFIG: Record<GameStatus, { icon: string; cta: string; placeholder: string; bgColor: string }> = {
+  playing: {
+    icon: '🎯',
+    cta: '次の目標を設定する（例：レベル50まで上げる）',
+    placeholder: '次の目標を入力...',
+    bgColor: 'bg-emerald-500/10',
+  },
+  completed: {
+    icon: '📝',
+    cta: '投資評価・感想を残す（例：神ゲーだった！）',
+    placeholder: '感想を入力...',
+    bgColor: 'bg-purple-500/10',
+  },
+  dropped: {
+    icon: '📉',
+    cta: '損切りした理由を記録する（次回の教訓）',
+    placeholder: '損切り理由を入力...',
+    bgColor: 'bg-rose-500/10',
+  },
+  backlog: {
+    icon: '🗓️',
+    cta: 'プレイ開始計画を立てる（いつ崩す？）',
+    placeholder: 'プレイ計画を入力...',
+    bgColor: 'bg-amber-500/10',
+  },
+}
+
+const MAX_MEMO_LENGTH = 200
 
 interface GameListItemProps {
   portfolio: PortfolioWithGame
   onEdit: () => void
   onDelete: () => void
+  shouldFocusMemo?: boolean
 }
 
 /**
@@ -26,15 +62,94 @@ export default function GameListItem({
   portfolio,
   onEdit,
   onDelete,
+  shouldFocusMemo = false,
 }: GameListItemProps) {
   const game = portfolio.games
   const purchasePrice = portfolio.purchase_price ?? 0
   const playTimeMinutes = portfolio.play_time_minutes ?? 0
   const isSubscription = portfolio.is_subscription ?? false
   const platform = portfolio.platform
+  const initialMemo = portfolio.memo ?? ''
 
   const status = portfolio.status as GameStatus | null
   const { cph, rank } = calculateCPH(purchasePrice, playTimeMinutes, isSubscription)
+
+  // メモ編集状態
+  const [isEditingMemo, setIsEditingMemo] = useState(false)
+  const [memoValue, setMemoValue] = useState(initialMemo)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // メモ設定（ステータスに応じて変化）
+  const memoConfig = MEMO_CONFIG[status || 'backlog']
+
+  // メモ保存（debounce）
+  const saveMemo = useCallback(async (value: string) => {
+    setIsSaving(true)
+    setSaveError(null)
+
+    const result = await updatePortfolioMemo({
+      portfolioId: portfolio.id,
+      memo: value.trim() || null,
+    })
+
+    setIsSaving(false)
+    if (!result.success) {
+      setSaveError(result.error)
+    }
+  }, [portfolio.id])
+
+  // メモ変更ハンドラ（500ms debounce）
+  const handleMemoChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    if (value.length <= MAX_MEMO_LENGTH) {
+      setMemoValue(value)
+      setSaveError(null)
+
+      // debounce
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+      debounceRef.current = setTimeout(() => {
+        saveMemo(value)
+      }, 500)
+    }
+  }, [saveMemo])
+
+  // 編集モード開始
+  const startEditing = useCallback(() => {
+    setIsEditingMemo(true)
+    // 次のレンダリング後にフォーカス
+    setTimeout(() => textareaRef.current?.focus(), 0)
+  }, [])
+
+  // 編集モード終了
+  const finishEditing = useCallback(() => {
+    setIsEditingMemo(false)
+    // 最終保存
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+    saveMemo(memoValue)
+  }, [memoValue, saveMemo])
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [])
+
+  // 外部からのメモ欄フォーカス要求
+  useEffect(() => {
+    if (shouldFocusMemo) {
+      startEditing()
+    }
+  }, [shouldFocusMemo, startEditing])
 
   // ステータスに応じた表示ランク（Luxury + Completed → Premium, Luxury + Dropped → LossCut）
   const displayRank = getDisplayRank(rank, status)
@@ -173,6 +288,79 @@ export default function GameListItem({
           🎁 無料で {formatPlayTime(playTimeMinutes)} 楽しんでいます！最高のコスパ！
         </div>
       )}
+
+      {/* 投資戦略メモ（シンプル1行デザイン） */}
+      <div className="mt-4">
+        {isEditingMemo ? (
+          // 編集モード
+          <div className="bg-gray-950/70 rounded-lg p-3 border border-dashed border-gray-700">
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-2 rounded ${memoConfig.bgColor}`}>
+                <span className="text-base">{memoConfig.icon}</span>
+              </div>
+              {isSaving && (
+                <span className="text-xs text-blue-400 animate-pulse">保存中...</span>
+              )}
+            </div>
+            <textarea
+              ref={textareaRef}
+              value={memoValue}
+              onChange={handleMemoChange}
+              onBlur={finishEditing}
+              placeholder={memoConfig.placeholder}
+              className="w-full bg-gray-900/50 border border-gray-800 rounded-lg px-3 py-2
+                         text-sm text-text-primary placeholder-gray-600
+                         focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30
+                         resize-none transition-colors"
+              rows={2}
+              maxLength={MAX_MEMO_LENGTH}
+            />
+            <div className="flex justify-between items-center text-xs mt-2">
+              <span className="text-gray-600">
+                {memoValue.length} / {MAX_MEMO_LENGTH}
+              </span>
+              {saveError && (
+                <span className="text-red-400">{saveError}</span>
+              )}
+            </div>
+          </div>
+        ) : memoValue ? (
+          // 表示モード（メモあり）
+          <button
+            onClick={startEditing}
+            className="w-full text-left bg-gray-950/50 rounded-lg p-3 border border-dashed border-gray-800
+                       hover:bg-gray-900/70 hover:border-gray-700 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded ${memoConfig.bgColor} flex-shrink-0`}>
+                <span className="text-base">{memoConfig.icon}</span>
+              </div>
+              <p className="text-sm text-gray-300 group-hover:text-text-primary transition-colors flex-1">
+                {memoValue}
+              </p>
+              <span className="text-xs text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                ✎ 編集
+              </span>
+            </div>
+          </button>
+        ) : (
+          // 追加ボタン（メモなし）- シンプル1行
+          <button
+            onClick={startEditing}
+            className="w-full text-left bg-gray-950/50 rounded-lg p-3 border border-dashed border-gray-800
+                       hover:bg-gray-900/70 hover:border-emerald-500/30 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded ${memoConfig.bgColor} group-hover:scale-110 transition-transform flex-shrink-0`}>
+                <span className="text-base">{memoConfig.icon}</span>
+              </div>
+              <span className="text-sm text-gray-500 group-hover:text-gray-300 transition-colors">
+                ＋ {memoConfig.cta}
+              </span>
+            </div>
+          </button>
+        )}
+      </div>
     </div>
   )
 }

@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { updatePortfolioEntry } from '@/app/actions/portfolio'
 import { STATUS_INFO, type GameStatus, type PortfolioWithGame } from '@/types/portfolio'
 import { PLATFORM_MASTER } from '@/constants/platforms'
+import { triggerStatusChangeNotification } from '@/lib/utils/status-notification'
 
 interface EditGameModalProps {
   portfolio: PortfolioWithGame
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  onStatusChange?: (portfolioId: string) => void
 }
 
 /**
@@ -21,6 +23,7 @@ export default function EditGameModal({
   isOpen,
   onClose,
   onSuccess,
+  onStatusChange,
 }: EditGameModalProps) {
   const [purchasePrice, setPurchasePrice] = useState('')
   const [playTimeHours, setPlayTimeHours] = useState('')
@@ -30,14 +33,20 @@ export default function EditGameModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // 元のステータスを保持（変更検知用）
+  const originalStatusRef = useRef<GameStatus | null>(null)
+
   // ポートフォリオデータでフォームを初期化
   useEffect(() => {
     if (portfolio) {
+      const initialStatus = (portfolio.status as GameStatus) || 'backlog'
       setPurchasePrice((portfolio.purchase_price ?? 0).toString())
       setPlayTimeHours(((portfolio.play_time_minutes ?? 0) / 60).toString())
       setIsSubscription(portfolio.is_subscription ?? false)
-      setStatus((portfolio.status as GameStatus) || 'backlog')
+      setStatus(initialStatus)
       setPlatform(portfolio.platform ?? '')
+      // 元のステータスを保存
+      originalStatusRef.current = initialStatus
     }
   }, [portfolio])
 
@@ -87,6 +96,14 @@ export default function EditGameModal({
       if (!result.success) {
         setError(result.error)
       } else {
+        // ステータス変更検知 & 通知トリガー
+        const oldStatus = originalStatusRef.current
+        if (oldStatus && oldStatus !== status) {
+          // 親コンポーネントにステータス変更を通知（メモ欄フォーカス用）
+          const focusMemo = () => onStatusChange?.(portfolio.id)
+          // システム通知を表示
+          triggerStatusChangeNotification(oldStatus, status, focusMemo)
+        }
         onSuccess()
         onClose()
       }

@@ -29,6 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Row Level Security (RLS)** - ユーザーデータの行レベルセキュリティ
 - **Server Actions** - ポートフォリオCRUD操作
 - **DeepL API** - 日本語→英語翻訳（ゲーム検索用）
+- **react-hot-toast** - ステータス変更通知（ターミナル風トースト）
 
 ## 重要な開発コマンド
 
@@ -133,6 +134,7 @@ Next.js Server Components
 - `is_subscription` (BOOLEAN): サブスク/無料フラグ
 - `status` (TEXT): playing / completed / dropped / backlog
 - `platform` (TEXT): プラットフォームID（PLATFORM_MASTERのid）
+- `memo` (TEXT): 投資戦略メモ（200文字制限）
 
 **RLS必須**: ユーザーは自分のデータのみアクセス可能
 
@@ -441,6 +443,7 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 - `createPortfolioEntry` - ゲーム登録
 - `updatePortfolioEntry` - ゲーム編集
 - `deletePortfolioEntry` - ゲーム削除
+- `updatePortfolioMemo` - メモ更新（debounce対応）
 
 **API Routes**:
 - `/api/games/search` - RAWGゲーム検索（DeepL翻訳対応）
@@ -519,6 +522,34 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 - 高単価で「やめた」なら**Loss Cut（暗い赤）**で損切り扱い
 - 両ケースでプログレスバー非表示（これ以上遊ぶ必要がない）
 - 設計ドキュメント: `docs/cph-density-rule-design.md`
+
+**投資戦略メモ（Investment Strategy Memo）**:
+ゲームを「積みゲー」にせず計画的にプレイするための戦略ツール。ステータスに応じてメモの役割が変化する。
+
+- データベース: `user_portfolios.memo` カラム（TEXT, 200文字制限）
+- 実装: `GameListItem.tsx` のインラインエディタ
+- 自動保存: 500ms debounce
+- 将来的にはAI分析でプレイパターンを可視化予定
+
+| ステータス | アイコン | メモの役割 | プレースホルダー |
+|-----------|---------|-----------|-----------------|
+| プレイ中 | 🎯 | 次の目標設定 | 「次の目標を入力...」 |
+| クリア済み | 📝 | 投資評価・感想 | 「感想を入力...」 |
+| やめた | 📉 | 損切り理由の記録 | 「損切り理由を入力...」 |
+| 積みゲー | 🗓️ | プレイ開始計画 | 「プレイ計画を入力...」 |
+
+**ステータス変更通知システム** (`src/lib/utils/status-notification.tsx`):
+ステータス変更時にターミナル風トースト通知を表示し、メモ記入を促す。
+
+- 依存: `react-hot-toast`
+- トースト表示: 5秒間、クリックでメモ欄にフォーカス
+- 実装: `ToasterProvider.tsx` + `EditGameModal.tsx` 内での変更検知
+
+| トリガー | 通知タイトル | 推奨アクション |
+|---------|-------------|---------------|
+| Playing → Completed | ✅ MISSION COMPLETE | 「評価ログ（Review）」の記録 |
+| Playing → Dropped | 📉 LOSS CUT DETECTED | 「中断理由（Reason）」の記録 |
+| Backlog → Playing | 🚀 PROJECT LAUNCHED | 「直近の作戦（Objective）」の設定 |
 
 **ダッシュボードUI（投資アプリ風）**:
 - キャッチコピー: 「遊べば遊ぶほど安くなる。目指せ『💎 実質無料』！」

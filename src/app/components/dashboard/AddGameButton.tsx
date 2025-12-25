@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import AddGameModal from '@/app/components/portfolio/AddGameModal'
 
-/** 無料プランの登録上限 */
-const FREE_TIER_LIMIT = 3
+// /** 無料プランの登録上限 */
+// const FREE_TIER_LIMIT = 3
 
 interface AddGameButtonProps {
   gameCount: number
@@ -12,20 +12,22 @@ interface AddGameButtonProps {
 
 /**
  * ゲーム登録ボタン
- * クリックでモーダルを開く（上限に達している場合は制限メッセージを表示）
+ * クリックでモーダルを開く
+ * TODO: 本番環境では上限チェックを有効化する
  */
-export default function AddGameButton({ gameCount }: AddGameButtonProps) {
+export default function AddGameButton({ gameCount: _gameCount }: AddGameButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [showLimitMessage, setShowLimitMessage] = useState(false)
+  // const [showLimitMessage, setShowLimitMessage] = useState(false)
 
-  const isLimitReached = gameCount >= FREE_TIER_LIMIT
+  // const isLimitReached = _gameCount >= FREE_TIER_LIMIT
 
   const handleClick = () => {
-    if (isLimitReached) {
-      setShowLimitMessage(true)
-    } else {
-      setIsModalOpen(true)
-    }
+    // if (isLimitReached) {
+    //   setShowLimitMessage(true)
+    // } else {
+    //   setIsModalOpen(true)
+    // }
+    setIsModalOpen(true)
   }
 
   return (
@@ -48,16 +50,13 @@ export default function AddGameButton({ gameCount }: AddGameButtonProps) {
         onClose={() => setIsModalOpen(false)}
       />
 
-      {/* 上限メッセージモーダル */}
-      {showLimitMessage && (
+      {/* 上限メッセージモーダル（本番環境で有効化予定） */}
+      {/* {showLimitMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* オーバーレイ */}
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setShowLimitMessage(false)}
           />
-
-          {/* メッセージ本体 */}
           <div className="relative bg-bg-primary border border-gray-800 rounded-2xl
                           w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="text-center">
@@ -83,7 +82,7 @@ export default function AddGameButton({ gameCount }: AddGameButtonProps) {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </>
   )
 }

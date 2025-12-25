@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import GameListItem from './GameListItem'
 import EditGameModal from '@/app/components/portfolio/EditGameModal'
@@ -19,7 +19,18 @@ export default function GameList({ portfolios }: GameListProps) {
   const router = useRouter()
   const [editingPortfolio, setEditingPortfolio] = useState<PortfolioWithGame | null>(null)
   const [deletingPortfolio, setDeletingPortfolio] = useState<PortfolioWithGame | null>(null)
+  // メモ欄フォーカス対象のポートフォリオID
+  const [focusMemoId, setFocusMemoId] = useState<string | null>(null)
 
+  // ステータス変更時のメモ欄フォーカス（Hookは条件分岐前に定義）
+  const handleStatusChange = useCallback((portfolioId: string) => {
+    // メモ欄をフォーカス対象に設定
+    setFocusMemoId(portfolioId)
+    // 少し遅延させてDOMが更新された後にフォーカスをリセット
+    setTimeout(() => setFocusMemoId(null), 100)
+  }, [])
+
+  // 空の場合のUI
   if (portfolios.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-xl">
@@ -61,6 +72,7 @@ export default function GameList({ portfolios }: GameListProps) {
             portfolio={portfolio}
             onEdit={() => handleEdit(portfolio)}
             onDelete={() => handleDelete(portfolio)}
+            shouldFocusMemo={focusMemoId === portfolio.id}
           />
         ))}
       </div>
@@ -72,6 +84,7 @@ export default function GameList({ portfolios }: GameListProps) {
           isOpen={true}
           onClose={() => setEditingPortfolio(null)}
           onSuccess={handleEditSuccess}
+          onStatusChange={handleStatusChange}
         />
       )}
 

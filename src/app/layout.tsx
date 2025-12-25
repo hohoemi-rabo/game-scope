@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_JP, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import ToasterProvider from "./components/ToasterProvider";
 
 // 見出し用フォント
 const inter = Inter({
@@ -50,6 +51,7 @@ export default function RootLayout({
           </main>
           <Footer />
         </div>
+        <ToasterProvider />
       </body>
     </html>
   );

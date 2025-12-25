@@ -202,6 +202,7 @@ export type Database = {
           game_id: string
           id: string
           is_subscription: boolean | null
+          memo: string | null
           platform: string | null
           play_time_minutes: number | null
           purchase_price: number | null
@@ -214,6 +215,7 @@ export type Database = {
           game_id: string
           id?: string
           is_subscription?: boolean | null
+          memo?: string | null
           platform?: string | null
           play_time_minutes?: number | null
           purchase_price?: number | null
@@ -226,6 +228,7 @@ export type Database = {
           game_id?: string
           id?: string
           is_subscription?: boolean | null
+          memo?: string | null
           platform?: string | null
           play_time_minutes?: number | null
           purchase_price?: number | null
