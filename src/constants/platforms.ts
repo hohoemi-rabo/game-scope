@@ -10,7 +10,7 @@ export const PLATFORM_MASTER = [
   { id: 'xbox-series', name: 'Xbox Series X/S', icon: '💚' },
   { id: 'xbox-one', name: 'Xbox One', icon: '💚' },
   { id: 'smartphone', name: 'Smartphone (iOS/Android)', icon: '📱' },
-  { id: 'retro', name: 'Retro / Others', icon: '🕹️' },
+  { id: 'retro', name: '旧世代機/その他', icon: '🕹️' },
 ] as const
 
 export type PlatformId = (typeof PLATFORM_MASTER)[number]['id']
