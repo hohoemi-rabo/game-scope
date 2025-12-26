@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import Container from '../components/Container'
 import NewsCard from '../components/NewsCard'
 import LoadingSpinner from '../components/LoadingSpinner'
+import DailyDigestSection from '../components/news/DailyDigestSection'
 import type { NewsItem } from '@/lib/api/rss'
 import { getPlatformButtonColor } from '@/lib/utils/platform-colors'
 
@@ -148,6 +149,9 @@ export default function NewsPage() {
           国内外のゲームニュースサイトから最新情報を掲載しています
         </p>
       </header>
+
+      {/* AI要約セクション */}
+      <DailyDigestSection />
 
       {/* フィルター */}
       <div className="mb-6 space-y-4">

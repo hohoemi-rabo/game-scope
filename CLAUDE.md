@@ -10,9 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 海外中心のゲーム評価データ(OpenCritic, Twitch等)を日本語でわかりやすく可視化し、一般ゲーマーに対して直感的かつ迅速に「どんなゲームか」を理解できる体験を提供する。
 
 ### 開発段階
-- **現在**: Phase 1〜2 完了
+- **現在**: Phase 1〜3 完了
 - Claude Code でのペアプログラミングを前提とした開発
 - Phase 2（Gaming ROI / コスパ管理機能）実装完了
+- Phase 3（ニュースDB化 + AI要約）実装完了
 
 ## 技術スタック
 
@@ -30,6 +31,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Server Actions** - ポートフォリオCRUD操作
 - **DeepL API** - 日本語→英語翻訳（ゲーム検索用）
 - **react-hot-toast** - ステータス変更通知（ターミナル風トースト）
+
+### Phase 3 追加技術
+- **Google Gemini API** - gemini-2.5-flash（AI要約生成）
+- **Supabase Edge Functions** - sync-news（RSS同期 + AI要約）
+- **Supabase Cron Jobs** - 毎日3:05 JST に自動実行
 
 ## 重要な開発コマンド
 
@@ -138,6 +144,29 @@ Next.js Server Components
 
 **RLS必須**: ユーザーは自分のデータのみアクセス可能
 
+### newsテーブル（Phase 3）
+
+RSSフィードから取得したニュース記事を保存:
+- `id` (UUID): 主キー
+- `title` (TEXT): 記事タイトル
+- `url` (TEXT): 記事URL（UNIQUE制約）
+- `site_name` (TEXT): ニュースサイト名（例: "4Gamer", "Nintendo"）
+- `published_at` (TIMESTAMPTZ): 公開日時
+- `thumbnail_url` (TEXT): サムネイル画像URL
+- `created_at` (TIMESTAMPTZ): 作成日時
+
+**データ管理**: 7日以上前の記事は自動削除（sync-news Edge Function）
+
+### daily_digestsテーブル（Phase 3）
+
+AI生成された日次要約を保存:
+- `id` (UUID): 主キー
+- `target_date` (DATE): 対象日（例: 2025-12-27）
+- `category` (TEXT): ニュースサイト名
+- `content` (TEXT): AI生成された3行まとめ
+- `created_at` (TIMESTAMPTZ): 作成日時
+- **UNIQUE制約**: `(target_date, category)` - 1日1カテゴリにつき1レコード
+
 ## デザインシステム
 
 ### カラーパレット
@@ -176,22 +205,36 @@ Next.js Server Components
 
 ## 主要機能の実装パターン
 
-### 1. ニュース一覧（RSS統合）
+### 1. ニュース一覧（RSS統合 + AI要約）
 
-**実装場所**: `src/app/news/page.tsx`, `src/lib/api/rss.ts`, `src/app/api/news/route.ts`
+**実装場所**:
+- `src/app/news/page.tsx` - ニュース一覧ページ
+- `src/app/api/news/route.ts` - ニュース取得API
+- `src/app/api/news/digests/route.ts` - AI要約取得API
+- `src/app/components/news/DailyDigestSection.tsx` - AI要約表示コンポーネント
 
-**アーキテクチャ**:
+**アーキテクチャ（Phase 3）**:
 ```
 RSS Feeds (10サイト)
+  ↓ (毎日3:05 JST - sync-news Edge Function)
+Supabase news テーブル (Upsert)
   ↓
-lib/api/rss.ts (サーバー側でRSS取得)
+Gemini 2.5 Flash API (AI要約生成)
   ↓
-API Route (/api/news) - 1時間キャッシュ
+Supabase daily_digests テーブル
+  ↓
+API Routes (/api/news, /api/news/digests)
   ↓
 Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 ```
 
-**重要**: バックエンドではキーワードフィルタリングせず全記事取得。クライアント側でフィルタリング。
+**sync-news Edge Function**:
+- RSS取得 → Upsert（urlをキーに重複防止）
+- 7日以上前のニュースを自動削除
+- Gemini APIで10ソースの要約を1リクエストで生成
+- operation_logsに実行結果を記録
+
+**重要**: クライアント側でフィルタリング。AI要約は毎日1回生成。
 
 ### 2. 検索機能
 
@@ -413,6 +456,37 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 - ✅ **Phase 1.7 (運用自動化)**: 完了（Edge Functions、Cron Jobs）
 - ✅ **UI改善**: 完了（フォント、ヘッダー/フッター、SNSリンク、無限スクロール）
 - ✅ **Phase 2 (Gaming ROI)**: 完了（認証、ダッシュボード、ポートフォリオCRUD）
+- ✅ **Phase 3 (ニュースDB化 + AI要約)**: 完了（RSS→DB保存、Gemini AI要約）
+
+### Phase 3 実装内容（ニュースDB化 + AI要約）
+
+ニュースをRSSから毎回取得する方式から、**データベース保存方式**に変更。AI（Gemini 2.5 Flash）による日次要約機能を追加。
+
+**コンセプト**: ニュースの永続化とAIによるトレンド要約で、ユーザーが効率的に情報収集できる体験を提供。
+
+**sync-news Edge Function**:
+- 実行: 毎日3:05 JST（Supabase Cron Job）
+- 処理フロー:
+  1. 10サイトのRSSを並列取得
+  2. newsテーブルにUpsert（urlをキーに重複防止）
+  3. 7日以上前のニュースを自動削除
+  4. Gemini 2.5 Flash APIで要約生成（1リクエスト）
+  5. daily_digestsテーブルに保存
+  6. operation_logsに実行結果を記録
+
+**RSSソース（10サイト）**:
+- 4Gamer（総合、PC、PlayStation、Switch、スマホ）
+- Nintendo、PlayStation Blog
+- Game*Spark、GAME Watch、GAMER
+
+**AI要約（DailyDigestSection）**:
+- 表示: ニュースページ上部にアコーディオン形式
+- 内容: 各サイトごとの「今日のトレンド3行まとめ」
+- 生成: Gemini 2.5 Flash（maxOutputTokens: 8192）
+- キャッシュ: API Route で30分キャッシュ
+
+**環境変数（Supabase Edge Functions）**:
+- `GEMINI_API_KEY` - Google AI Studio で取得
 
 ### Phase 2 実装内容（Gaming ROI / コスパ管理機能）
 
@@ -575,6 +649,7 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 
 - [REQUIREMENTS.md](./REQUIREMENTS.md) - Phase 1 要件定義書
 - [docs/REQUIREMENTS_PHASE2.md](./docs/REQUIREMENTS_PHASE2.md) - Phase 2 (Gaming ROI) 要件定義書
+- [docs/news-database-design.md](./docs/news-database-design.md) - Phase 3 (ニュースDB + AI要約) 設計書
 - [docs/tickets/](./docs/tickets/) - 機能別開発チケット
 - [docs/自動更新システム.md](./docs/自動更新システム.md) - 運用ドキュメント
 - [docs/platform-selection-design.md](./docs/platform-selection-design.md) - プラットフォーム選択設計
