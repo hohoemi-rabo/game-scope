@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Container from './Container'
 import LoginButton from './auth/LoginButton'
 import UserMenu from './auth/UserMenu'
+import MobileMenu from './MobileMenu'
 import { getCurrentUser } from '@/lib/supabase/server-auth'
 
 /**
@@ -43,54 +44,54 @@ export default async function Header() {
             </div>
           </Link>
 
-          {/* ナビゲーション */}
-          <nav className="flex items-center gap-2 md:gap-4">
+          {/* デスクトップナビゲーション */}
+          <nav className="hidden md:flex items-center gap-4">
             <Link
               href="/"
-              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-accent/10 transition-all duration-200
                          border border-transparent hover:border-accent/20"
             >
               <span className="text-lg">🏆</span>
-              <span className="hidden md:inline">高評価</span>
+              <span>高評価</span>
             </Link>
             <Link
               href="/search"
-              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-[#06b6d4]/10 transition-all duration-200
                          border border-transparent hover:border-[#06b6d4]/20"
             >
               <span className="text-lg">🔍</span>
-              <span className="hidden md:inline">検索</span>
+              <span>検索</span>
             </Link>
             <Link
               href="/news"
-              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-[#f59e0b]/10 transition-all duration-200
                          border border-transparent hover:border-[#f59e0b]/20"
             >
               <span className="text-lg">📰</span>
-              <span className="hidden md:inline">ニュース</span>
+              <span>ニュース</span>
             </Link>
             <Link
               href="/status"
-              className="flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-success/10 transition-all duration-200
                          border border-transparent hover:border-success/20"
             >
               <span className="text-lg">🔄</span>
-              <span className="hidden md:inline">更新状況</span>
+              <span>更新状況</span>
             </Link>
 
-            {/* セパレーター（PCのみ表示） */}
-            <div className="hidden md:block w-px h-6 bg-gray-700 mx-2" />
+            {/* セパレーター */}
+            <div className="w-px h-6 bg-gray-700 mx-2" />
 
-            {/* SNSリンク（PCのみ表示） */}
-            <div className="hidden md:flex items-center gap-2">
+            {/* SNSリンク */}
+            <div className="flex items-center gap-2">
               <a
                 href="https://www.instagram.com/masayuki.kiwami/"
                 target="_blank"
@@ -132,7 +133,7 @@ export default async function Header() {
             </div>
 
             {/* セパレーター */}
-            <div className="w-px h-6 bg-gray-700 mx-1 md:mx-2" />
+            <div className="w-px h-6 bg-gray-700 mx-2" />
 
             {/* 認証部分 */}
             {user ? (
@@ -141,6 +142,9 @@ export default async function Header() {
               <LoginButton />
             )}
           </nav>
+
+          {/* モバイルメニュー */}
+          <MobileMenu user={user} />
         </div>
       </Container>
     </header>
