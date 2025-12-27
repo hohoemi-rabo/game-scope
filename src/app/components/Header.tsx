@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import Container from './Container'
 import LoginButton from './auth/LoginButton'
 import UserMenu from './auth/UserMenu'
@@ -26,22 +27,15 @@ export default async function Header() {
       <Container>
         <div className="flex items-center justify-between h-16">
           {/* ロゴ */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <span className="text-2xl group-hover:scale-110 transition-transform">🎮</span>
-            <div className="text-2xl font-extrabold">
-              <span className="bg-gradient-to-r from-[#5865f2] via-[#9b59b6] to-[#e91e63]
-                             text-transparent bg-clip-text
-                             group-hover:from-[#e91e63] group-hover:via-[#9b59b6] group-hover:to-[#5865f2]
-                             transition-all duration-500">
-                Game
-              </span>
-              <span className="bg-gradient-to-r from-[#00c896] to-[#06b6d4]
-                             text-transparent bg-clip-text
-                             group-hover:from-[#06b6d4] group-hover:to-[#00c896]
-                             transition-all duration-500">
-                Scope
-              </span>
-            </div>
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/logo.png"
+              alt="GameScope"
+              width={180}
+              height={45}
+              className="h-10 w-auto group-hover:opacity-90 transition-opacity"
+              priority
+            />
           </Link>
 
           {/* デスクトップナビゲーション */}
