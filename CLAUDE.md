@@ -202,6 +202,7 @@ AI生成された日次要約を保存:
 - モバイルファースト設計
 - ブレークポイント: 768px (md:)
 - SNSリンク: PCのみヘッダー表示、全デバイスでフッター表示（誤タップ防止）
+- スムーズスクロール: `html { scroll-behavior: smooth; }` でサイト全体に適用
 
 ## 主要機能の実装パターン
 
@@ -267,14 +268,30 @@ Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 - GameScopeロゴ: グラデーション（Game: ブルー→パープル→ピンク、Scope: グリーン→シアン）
 - ナビゲーション: 🏆 高評価 | 🔍 検索 | 📰 ニュース | 🔄 更新状況
 - SNSリンク（PCのみ表示）: Instagram、X（公式SVGロゴ）
-- モバイル: 768px未満ではアイコンのみ表示
+- デスクトップ: `hidden md:flex` で768px以上で表示
+- モバイル: ハンバーガーメニュー（MobileMenu）に切り替え
 - ログインボタン / ユーザーメニュー（ドロップダウン）実装済み
+
+**モバイルメニュー** (`src/app/components/MobileMenu.tsx`):
+- 768px未満でハンバーガーアイコン表示
+- React Portal使用（`createPortal`でbody直下にレンダリング）
+  - 理由: ヘッダーの`backdrop-blur-sm`がスタッキングコンテキストを作成するため
+- z-index階層: オーバーレイ z-[100]、メニュー z-[101]、開発中モーダル z-[200]
+- 背景色: インラインスタイルで確実に適用（`backgroundColor: '#111111'`）
+- 認証処理: Supabase OAuth（LoginButton/UserMenuと同じロジック）
+- SSR対応: `mounted`状態でPortalを条件付きレンダリング
 
 **フッター** (`src/app/components/Footer.tsx`):
 - 同期ステータス表示（🟢 最新情報更新済 / 🔴 更新エラー + 経過時間）
 - SNSリンク（全デバイス表示）
 - リンク: お問い合わせ（GitHub Issues + Instagram DM）、プライバシーポリシー、Powered by OpenCritic
 - **SyncStatus**: Client ComponentでAPIから最新状態を取得（`/api/sync-status`）
+
+**スクロールトップボタン** (`src/app/components/ScrollToTopButton.tsx`):
+- 300px以上スクロールで表示
+- fixed position（右下固定）
+- スムーズスクロールでページトップへ戻る
+- `layout.tsx`でサイト全体に適用
 
 ### 5. 更新状況ページ
 
@@ -480,10 +497,15 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 - Game*Spark、GAME Watch、GAMER
 
 **AI要約（DailyDigestSection）**:
-- 表示: ニュースページ上部にアコーディオン形式
+- 表示: ニュースページ上部にカード形式（常に展開、アコーディオン廃止）
 - 内容: 各サイトごとの「今日のトレンド3行まとめ」
 - 生成: Gemini 2.5 Flash（maxOutputTokens: 8192）
 - キャッシュ: API Route で30分キャッシュ
+- UI機能:
+  - サイト別カラー背景（薄い色）+ ホバー時に枠線カラー変化
+  - クリックでニュースページのフィルター済み一覧へ遷移（`/news?site={category}#news-filter`）
+  - 空の場合「本日の更新なし」表示
+  - カラードット: タイトル横にサイトカラーのインジケーター表示
 
 **環境変数（Supabase Edge Functions）**:
 - `GEMINI_API_KEY` - Google AI Studio で取得
