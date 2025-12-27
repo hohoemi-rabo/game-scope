@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import Container from '../components/Container'
 import NewsCard from '../components/NewsCard'
@@ -37,11 +38,22 @@ const PLATFORM_ORDER = [
  * RSSフィードからの情報をニュースサイト名とキーワードでフィルタリング可能
  */
 export default function NewsPage() {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('All')
+  const searchParams = useSearchParams()
+  const initialSite = searchParams.get('site') || 'All'
+
+  const [selectedPlatform, setSelectedPlatform] = useState<string>(initialSite)
   const [selectedKeyword, setSelectedKeyword] = useState<string>('全て')
   const [displayCount, setDisplayCount] = useState<number>(ITEMS_PER_PAGE)
 
   const observerTarget = useRef<HTMLDivElement>(null)
+
+  // URLパラメータが変わった時にフィルターを更新
+  useEffect(() => {
+    const siteParam = searchParams.get('site')
+    if (siteParam && PLATFORM_ORDER.includes(siteParam)) {
+      setSelectedPlatform(siteParam)
+    }
+  }, [searchParams])
 
   const { data, error, isLoading } = useSWR('/api/news', fetcher, {
     revalidateOnFocus: false,
@@ -154,7 +166,7 @@ export default function NewsPage() {
       <DailyDigestSection />
 
       {/* フィルター */}
-      <div className="mb-6 space-y-4">
+      <div id="news-filter" className="mb-6 space-y-4 scroll-mt-20">
         {/* ニュースサイト名フィルター */}
         <div>
           <h3 className="text-sm font-semibold text-text-secondary mb-2">

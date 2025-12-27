@@ -18,6 +18,10 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-bg-primary text-text-primary;
     font-family: var(--font-noto-sans-jp), var(--font-inter), Arial, Helvetica, sans-serif;

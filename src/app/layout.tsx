@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ToasterProvider from "./components/ToasterProvider";
+import ScrollToTopButton from "./components/ScrollToTopButton";
 
 // 見出し用フォント
 const inter = Inter({
@@ -52,6 +53,7 @@ export default function RootLayout({
           <Footer />
         </div>
         <ToasterProvider />
+        <ScrollToTopButton />
       </body>
     </html>
   );

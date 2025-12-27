@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
 import useSWR from 'swr'
+import { getPlatformHexColor } from '@/lib/utils/platform-colors'
 
 interface DailyDigest {
   id: string
@@ -18,8 +19,6 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json())
  * サイト別のニューストレンド3行まとめを表示
  */
 export default function DailyDigestSection() {
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
-
   const { data, error, isLoading } = useSWR<{ digests: DailyDigest[] }>(
     '/api/news/digests',
     fetcher,
@@ -31,12 +30,6 @@ export default function DailyDigestSection() {
   // データがない場合は何も表示しない
   if (isLoading || error || !data?.digests?.length) {
     return null
-  }
-
-  const digests = data.digests
-
-  const toggleExpand = (category: string) => {
-    setExpandedCategory(expandedCategory === category ? null : category)
   }
 
   return (
@@ -52,56 +45,54 @@ export default function DailyDigestSection() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {digests.map((digest) => (
-          <div
-            key={digest.id}
-            className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden
-                       hover:border-emerald-500/50 transition-colors"
-          >
-            {/* ヘッダー（クリックで展開） */}
-            <button
-              onClick={() => toggleExpand(digest.category)}
-              className="w-full px-4 py-3 flex items-center justify-between
-                         hover:bg-gray-800/50 transition-colors"
+        {data.digests.map((digest) => {
+          const hexColor = getPlatformHexColor(digest.category)
+          const hasContent = digest.content && digest.content.trim().length > 0
+
+          return (
+            <Link
+              key={digest.id}
+              href={`/news?site=${encodeURIComponent(digest.category)}#news-filter`}
+              className="block border rounded-xl p-4 transition-all duration-200
+                         hover:-translate-y-0.5 cursor-pointer group"
+              style={{
+                backgroundColor: `${hexColor}10`,
+                borderColor: '#374151',
+                boxShadow: `inset 0 0 0 1px ${hexColor}20`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = `${hexColor}20`
+                e.currentTarget.style.borderColor = hexColor
+                e.currentTarget.style.boxShadow = `0 10px 25px -5px ${hexColor}30`
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = `${hexColor}10`
+                e.currentTarget.style.borderColor = '#374151'
+                e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${hexColor}20`
+              }}
             >
-              <span className="font-medium text-text-primary">
-                {digest.category}
-              </span>
-              <svg
-                className={`w-5 h-5 text-text-secondary transition-transform
-                  ${expandedCategory === digest.category ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              <h3
+                className="text-lg font-medium text-text-primary mb-2 group-hover:text-white
+                           transition-colors flex items-center gap-2"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: hexColor }}
                 />
-              </svg>
-            </button>
-
-            {/* コンテンツ（展開時のみ表示） */}
-            {expandedCategory === digest.category && (
-              <div className="px-4 pb-4 border-t border-gray-800">
-                <div className="pt-3 text-sm text-text-secondary whitespace-pre-line leading-relaxed">
+                {digest.category}
+              </h3>
+              {hasContent ? (
+                <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">
                   {digest.content}
-                </div>
-              </div>
-            )}
-
-            {/* プレビュー（未展開時） */}
-            {expandedCategory !== digest.category && (
-              <div className="px-4 pb-3">
-                <p className="text-xs text-text-secondary line-clamp-2">
-                  {digest.content.split('\n')[0]}
                 </p>
-              </div>
-            )}
-          </div>
-        ))}
+              ) : (
+                <p className="text-sm text-text-secondary/50 italic">
+                  本日の更新なし
+                </p>
+              )}
+            </Link>
+          )
+        })}
       </div>
 
       <p className="mt-3 text-xs text-text-secondary text-right">
