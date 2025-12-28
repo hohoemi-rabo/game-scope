@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import Container from '@/app/components/Container'
-import { getRecentSyncLogs } from '@/lib/supabase/server'
+import { getRecentSyncLogs, getRecentNewsSyncLogs } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: '更新状況 | GameScope',
@@ -11,7 +11,10 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default async function StatusPage() {
-  const logs = await getRecentSyncLogs(10)
+  const [gameLogs, newsLogs] = await Promise.all([
+    getRecentSyncLogs(5),
+    getRecentNewsSyncLogs(5),
+  ])
 
   // 時間をフォーマットする関数
   const formatTime = (dateString: string) => {
@@ -42,6 +45,107 @@ export default async function StatusPage() {
     }
   }
 
+  // ログテーブルコンポーネント
+  const LogTable = ({
+    logs,
+    type,
+  }: {
+    logs: typeof gameLogs
+    type: 'game' | 'news'
+  }) => {
+    const getMessage = (status: string) => {
+      if (type === 'game') {
+        return status === 'success' ? '60件のゲーム情報を更新' : '更新処理中にエラー'
+      } else {
+        return status === 'success' ? 'ニュース記事を同期 + AI要約生成' : '同期処理中にエラー'
+      }
+    }
+
+    if (logs.length === 0) {
+      return (
+        <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 text-center">
+          <p className="text-text-secondary">更新履歴はまだありません</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800 bg-gray-900/50">
+                <th className="text-left py-3 px-4 text-text-secondary font-medium">ステータス</th>
+                <th className="text-left py-3 px-4 text-text-secondary font-medium">更新日時</th>
+                <th className="text-left py-3 px-4 text-text-secondary font-medium hidden md:table-cell">経過</th>
+                <th className="text-left py-3 px-4 text-text-secondary font-medium">内容</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, index) => (
+                <tr
+                  key={log.id}
+                  className={`border-b border-gray-800/50 ${
+                    index === 0 ? (log.status === 'success' ? 'bg-success/5' : 'bg-danger/5') : ''
+                  }`}
+                >
+                  <td className="py-3 px-4">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs ${
+                        log.status === 'success'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-danger/10 text-danger'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          log.status === 'success' ? 'bg-success' : 'bg-danger'
+                        }`}
+                      />
+                      {log.status === 'success' ? '成功' : '失敗'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-text-primary">
+                    {log.created_at ? formatTime(log.created_at) : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-text-secondary hidden md:table-cell">
+                    {log.created_at ? getElapsedTime(log.created_at) : '-'}
+                  </td>
+                  <td className="py-3 px-4 text-text-secondary">
+                    {getMessage(log.status || '')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  // 最新ステータスバッジ
+  const LatestStatusBadge = ({ logs }: { logs: typeof gameLogs }) => {
+    if (logs.length === 0) return null
+    const latest = logs[0]
+    const isSuccess = latest.status === 'success'
+
+    return (
+      <div
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+          isSuccess
+            ? 'bg-success/10 text-success border border-success/30'
+            : 'bg-danger/10 text-danger border border-danger/30'
+        }`}
+      >
+        <span className={`w-2 h-2 rounded-full ${isSuccess ? 'bg-success animate-pulse' : 'bg-danger'}`} />
+        {isSuccess ? '正常稼働中' : '要確認'}
+        {latest.created_at && (
+          <span className="text-xs opacity-70">({getElapsedTime(latest.created_at)})</span>
+        )}
+      </div>
+    )
+  }
+
   return (
     <main className="py-8 md:py-12">
       <Container>
@@ -54,6 +158,44 @@ export default async function StatusPage() {
             GameScopeのデータがどのように更新されているかをご紹介します
           </p>
         </div>
+
+        {/* 現在のステータスサマリー */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
+            <span className="text-accent">📊</span>
+            現在のステータス
+          </h2>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* ゲーム同期ステータス */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🎮</span>
+                  <h3 className="font-bold text-text-primary">ゲーム情報同期</h3>
+                </div>
+                <LatestStatusBadge logs={gameLogs} />
+              </div>
+              <p className="text-sm text-text-secondary">
+                毎日 3:00 JST に Top60 ゲームを自動更新
+              </p>
+            </div>
+
+            {/* ニュース同期ステータス */}
+            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">📰</span>
+                  <h3 className="font-bold text-text-primary">ニュース同期</h3>
+                </div>
+                <LatestStatusBadge logs={newsLogs} />
+              </div>
+              <p className="text-sm text-text-secondary">
+                毎日 3:05 JST に 10サイトのRSS + AI要約を更新
+              </p>
+            </div>
+          </div>
+        </section>
 
         {/* 更新の仕組み */}
         <section className="mb-10">
@@ -125,90 +267,69 @@ export default async function StatusPage() {
             更新スケジュール
           </h2>
 
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                <span className="text-accent font-bold">3</span>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
+                  <span className="text-accent font-bold">3:00</span>
+                </div>
+                <div>
+                  <p className="text-text-primary font-medium">ゲーム情報更新</p>
+                  <p className="text-sm text-text-secondary">毎日 午前3時（JST）</p>
+                </div>
               </div>
-              <div>
-                <p className="text-text-primary font-medium">毎日 午前3時（日本時間）</p>
-                <p className="text-sm text-text-secondary">自動的にゲーム情報を更新</p>
-              </div>
+              <p className="text-sm text-text-secondary">
+                最新の高評価ゲーム60タイトルのスコア・レビュー数・詳細情報を更新
+              </p>
             </div>
-            <p className="text-sm text-text-secondary mt-3 pl-13">
-              最新の高評価ゲーム60タイトルのスコア・レビュー数・詳細情報を自動で更新しています。
-              手動操作なしで常に最新の情報をお届けします。
-            </p>
+
+            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-[#f59e0b]/20 rounded-full flex items-center justify-center">
+                  <span className="text-[#f59e0b] font-bold text-sm">3:05</span>
+                </div>
+                <div>
+                  <p className="text-text-primary font-medium">ニュース同期 + AI要約</p>
+                  <p className="text-sm text-text-secondary">毎日 午前3時5分（JST）</p>
+                </div>
+              </div>
+              <p className="text-sm text-text-secondary">
+                10サイトのRSSを取得し、Gemini AIで各サイトの3行要約を生成
+              </p>
+            </div>
           </div>
         </section>
 
         {/* 更新履歴 */}
-        <section>
+        <section className="mb-10">
           <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
             <span className="text-accent">📋</span>
             最近の更新履歴
           </h2>
 
-          {logs.length > 0 ? (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800 bg-gray-900/50">
-                      <th className="text-left py-3 px-4 text-text-secondary font-medium">ステータス</th>
-                      <th className="text-left py-3 px-4 text-text-secondary font-medium">更新日時</th>
-                      <th className="text-left py-3 px-4 text-text-secondary font-medium hidden md:table-cell">経過</th>
-                      <th className="text-left py-3 px-4 text-text-secondary font-medium">内容</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logs.map((log, index) => (
-                      <tr
-                        key={log.id}
-                        className={`border-b border-gray-800/50 ${
-                          index === 0 ? 'bg-success/5' : ''
-                        }`}
-                      >
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs ${
-                              log.status === 'success'
-                                ? 'bg-success/10 text-success'
-                                : 'bg-danger/10 text-danger'
-                            }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                log.status === 'success' ? 'bg-success' : 'bg-danger'
-                              }`}
-                            />
-                            {log.status === 'success' ? '成功' : '失敗'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-text-primary">
-                          {log.created_at ? formatTime(log.created_at) : '-'}
-                        </td>
-                        <td className="py-3 px-4 text-text-secondary hidden md:table-cell">
-                          {log.created_at ? getElapsedTime(log.created_at) : '-'}
-                        </td>
-                        <td className="py-3 px-4 text-text-secondary">
-                          {log.status === 'success' ? '60件のゲーム情報を更新' : '更新処理中にエラー'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* ゲーム同期履歴 */}
+            <div>
+              <h3 className="text-lg font-bold text-text-primary mb-3 flex items-center gap-2">
+                <span>🎮</span>
+                ゲーム情報同期
+              </h3>
+              <LogTable logs={gameLogs} type="game" />
             </div>
-          ) : (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-8 text-center">
-              <p className="text-text-secondary">更新履歴はまだありません</p>
+
+            {/* ニュース同期履歴 */}
+            <div>
+              <h3 className="text-lg font-bold text-text-primary mb-3 flex items-center gap-2">
+                <span>📰</span>
+                ニュース同期
+              </h3>
+              <LogTable logs={newsLogs} type="news" />
             </div>
-          )}
+          </div>
         </section>
 
         {/* 補足説明 */}
-        <div className="mt-8 p-4 bg-accent/5 border border-accent/20 rounded-xl">
+        <div className="p-4 bg-accent/5 border border-accent/20 rounded-xl">
           <p className="text-sm text-text-secondary">
             <span className="text-accent font-medium">💡 ヒント:</span>{' '}
             フッターにも最新の更新状況が表示されています。

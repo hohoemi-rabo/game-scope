@@ -115,7 +115,7 @@ export const getLatestSyncLog = cache(async (): Promise<Database['public']['Tabl
 })
 
 /**
- * 最近の自動更新ログ一覧を取得
+ * 最近の自動更新ログ一覧を取得（ゲーム同期）
  */
 export const getRecentSyncLogs = cache(async (limit: number = 10): Promise<Database['public']['Tables']['operation_logs']['Row'][]> => {
   const supabase = createServerClient()
@@ -129,6 +129,52 @@ export const getRecentSyncLogs = cache(async (limit: number = 10): Promise<Datab
 
   if (error) {
     console.error('Failed to fetch recent sync logs:', error)
+    return []
+  }
+
+  return data || []
+})
+
+/**
+ * 最新のニュース同期ログを取得
+ */
+export const getLatestNewsSyncLog = cache(async (): Promise<Database['public']['Tables']['operation_logs']['Row'] | null> => {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase
+    .from('operation_logs')
+    .select('*')
+    .eq('operation_type', 'news_sync')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null
+    }
+    console.error('Failed to fetch latest news sync log:', error)
+    return null
+  }
+
+  return data
+})
+
+/**
+ * 最近のニュース同期ログ一覧を取得
+ */
+export const getRecentNewsSyncLogs = cache(async (limit: number = 10): Promise<Database['public']['Tables']['operation_logs']['Row'][]> => {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase
+    .from('operation_logs')
+    .select('*')
+    .eq('operation_type', 'news_sync')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to fetch recent news sync logs:', error)
     return []
   }
 

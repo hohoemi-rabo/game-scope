@@ -1,12 +1,16 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import Container from './components/Container'
-import InfiniteGameGrid from './components/InfiniteGameGrid'
+import { getCurrentUser } from '@/lib/supabase/server-auth'
+import HeroSection from './components/landing/HeroSection'
+import FeaturesSection from './components/landing/FeaturesSection'
+import PreviewSection from './components/landing/PreviewSection'
+import CTASection from './components/landing/CTASection'
 import type { Metadata } from 'next'
 
 // メタデータの設定
 export const metadata: Metadata = {
-  title: 'GameScope - 日本語で話題のゲームがわかる',
-  description: '海外ゲームの評価を日本語でわかりやすく。高評価ゲーム、発売予定、配信情報を一目で確認。',
+  title: 'GameScope - ゲームは、消費ではなく「資産」だ。',
+  description: '遊んだ時間を「投資」に変える。あなたのゲーム体験を、価値ある資産として可視化するゲームポートフォリオ管理ツール。',
 }
 
 // 1時間ごとに再検証（ISR）
@@ -14,71 +18,63 @@ export const revalidate = 3600
 
 /**
  * トップページ
- * 高評価ゲーム一覧を表示（無限スクロール対応）
  *
- * データフェッチング:
- * - 初期20件をサーバー側で取得
- * - スクロールで追加データを動的読み込み
- * - パフォーマンス改善のため段階的読み込み
+ * - 未ログイン: ランディングページを表示
+ * - ログイン済み: /ranking にリダイレクト
  */
 export default async function HomePage() {
+  // ログイン状態を確認
+  const user = await getCurrentUser()
+
+  // ログイン済みの場合は /ranking にリダイレクト
+  if (user) {
+    redirect('/ranking')
+  }
+
+  // プレビュー用のゲームデータを取得
+  let previewGames: Array<{
+    id: string
+    title_ja: string | null
+    title_en: string
+    metascore: number | null
+    platforms: string[]
+    thumbnail_url: string | null
+    review_count: number | null
+  }> = []
+
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // 初期データ取得（20件）
-    // ranking IS NOT NULL でTop60のみ、rankingでソート
-    const { data: initialGames, error } = await supabase
+    const { data } = await supabase
       .from('games')
-      .select('*')
+      .select('id, title_ja, title_en, metascore, platforms, thumbnail_url, review_count')
       .not('ranking', 'is', null)
       .order('ranking', { ascending: true })
-      .limit(20)
+      .limit(8)
 
-    if (error) {
-      throw error
+    if (data) {
+      previewGames = data
     }
-
-    // 総件数取得（Top60のみカウント）
-    const { count } = await supabase
-      .from('games')
-      .select('*', { count: 'exact', head: true })
-      .not('ranking', 'is', null)
-
-    const hasMore = count ? 20 < count : false
-
-    return (
-      <Container className="py-8">
-        <header className="mb-10">
-          <div className="bg-gradient-to-r from-accent/10 via-[#9b59b6]/10 to-[#e91e63]/10
-                          border border-accent/20 rounded-2xl p-6 md:p-8">
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-4xl">🏆</span>
-              <h1 className="text-3xl md:text-4xl font-bold text-text-primary">
-                高評価ゲーム
-              </h1>
-            </div>
-            <p className="text-text-secondary text-base md:text-lg leading-relaxed">
-              世界中のレビューサイト
-              <span className="inline-flex items-center mx-1.5 px-2 py-0.5
-                             bg-success/20 text-success font-bold rounded-md text-sm">
-                メタスコア
-              </span>
-              で高評価を獲得したゲームをランキング形式で紹介
-            </p>
-          </div>
-        </header>
-
-        <InfiniteGameGrid
-          initialGames={initialGames || []}
-          initialHasMore={hasMore}
-        />
-      </Container>
-    )
   } catch (error) {
-    console.error('Failed to load games:', error)
-    throw error // error.tsx でキャッチされる
+    console.error('Failed to fetch preview games:', error)
   }
+
+  return (
+    <main className="min-h-screen bg-[#0a0a0a]">
+      {/* Hero セクション */}
+      <HeroSection />
+
+      {/* 機能紹介セクション */}
+      <FeaturesSection />
+
+      {/* ゲームプレビューセクション */}
+      <PreviewSection games={previewGames} />
+
+      {/* 最終CTA */}
+      <CTASection />
+    </main>
+  )
 }

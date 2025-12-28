@@ -41,7 +41,7 @@ export default async function Header() {
           {/* デスクトップナビゲーション */}
           <nav className="hidden md:flex items-center gap-4">
             <Link
-              href="/"
+              href="/ranking"
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg
                          text-text-secondary hover:text-text-primary
                          hover:bg-accent/10 transition-all duration-200

@@ -65,7 +65,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
   }
 
   const navItems = [
-    { href: '/', label: '高評価', icon: '🏆' },
+    { href: '/ranking', label: '高評価', icon: '🏆' },
     { href: '/search', label: '検索', icon: '🔍' },
     { href: '/news', label: 'ニュース', icon: '📰' },
     { href: '/status', label: '更新状況', icon: '🔄' },
