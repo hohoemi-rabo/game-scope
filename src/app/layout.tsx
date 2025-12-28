@@ -29,10 +29,33 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "GameScope",
+    default: "GameScope | ゲームは、消費ではなく「資産」だ！",
     template: "%s | GameScope",
   },
-  description: "日本語で話題のゲームの評判と雰囲気が3秒でわかる",
+  description: "あなたのゲームライフを数値化する、ゲーマーのための資産管理ツール。プレイ時間と金額を記録して、ゲーミングROIを可視化しよう。",
+  metadataBase: new URL("https://www.gamescope.jp"),
+  openGraph: {
+    title: "GameScope | ゲームは、消費ではなく「資産」だ！",
+    description: "あなたのゲームライフを数値化する、ゲーマーのための資産管理ツール。プレイ時間と金額を記録して、ゲーミングROIを可視化しよう。",
+    url: "https://www.gamescope.jp",
+    siteName: "GameScope",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "GameScope - ゲームは、消費ではなく「資産」だ！",
+      },
+    ],
+    locale: "ja_JP",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GameScope | ゲームは、消費ではなく「資産」だ！",
+    description: "あなたのゲーミングROIを可視化しよう。",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
