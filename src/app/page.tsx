@@ -9,7 +9,7 @@ import type { Metadata } from 'next'
 
 // メタデータの設定
 export const metadata: Metadata = {
-  title: 'GameScope - ゲームは、消費ではなく「資産」だ。',
+  title: 'GameScope - ゲームは、消費ではなく「資産」だ！',
   description: '遊んだ時間を「投資」に変える。あなたのゲーム体験を、価値ある資産として可視化するゲームポートフォリオ管理ツール。',
 }
 

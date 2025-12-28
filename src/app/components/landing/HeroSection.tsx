@@ -1,31 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { createBrowserClient } from '@/lib/supabase/client'
-
-/**
- * 開発環境かどうかを判定
- */
-function isDevelopment(): boolean {
-  if (typeof window === 'undefined') return false
-  const hostname = window.location.hostname
-  return hostname === 'localhost' || hostname === '127.0.0.1'
-}
 
 /**
  * HeroSection - LPのメインビジュアル
  * キャッチコピーとCTAボタンを表示
  */
 export default function HeroSection() {
-  const [showDevMessage, setShowDevMessage] = useState(false)
-
   const handleLogin = async () => {
-    // 本番環境では開発中メッセージを表示
-    if (!isDevelopment()) {
-      setShowDevMessage(true)
-      return
-    }
-
     const supabase = createBrowserClient()
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -68,7 +50,7 @@ export default function HeroSection() {
                          animate-gradient-x">
             『資産』
           </span>
-          だ。
+          だ！
         </h1>
 
         {/* サブキャッチ */}
@@ -158,39 +140,6 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* 開発中メッセージモーダル */}
-      {showDevMessage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setShowDevMessage(false)}
-          />
-          <div className="relative bg-bg-primary border border-gray-800 rounded-2xl
-                          w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-center">
-              <span className="text-5xl mb-4 block">🚧</span>
-              <h3 className="text-xl font-bold text-text-primary mb-2">
-                現在開発中です
-              </h3>
-              <p className="text-text-secondary mb-4">
-                ログイン機能は現在準備中です。
-              </p>
-              <p className="text-sm text-text-secondary mb-6">
-                サービス公開までしばらくお待ちください。
-                <br />
-                <span className="text-xs text-emerald-400">Coming Soon...</span>
-              </p>
-              <button
-                onClick={() => setShowDevMessage(false)}
-                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-text-primary
-                           rounded-lg font-medium transition-colors"
-              >
-                閉じる
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   )
 }
