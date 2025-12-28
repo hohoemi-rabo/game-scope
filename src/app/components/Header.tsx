@@ -87,7 +87,7 @@ export default async function Header() {
             {/* SNSリンク */}
             <div className="flex items-center gap-2">
               <a
-                href="https://www.instagram.com/masayuki.kiwami/"
+                href="https://www.instagram.com/gamescope.jp/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center w-9 h-9 rounded-lg
@@ -106,7 +106,7 @@ export default async function Header() {
                 </svg>
               </a>
               <a
-                href="https://x.com/masayuki_kiwami"
+                href="https://x.com/gamescope_jp"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center w-9 h-9 rounded-lg

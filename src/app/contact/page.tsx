@@ -99,7 +99,7 @@ export default function ContactPage() {
               </li>
             </ul>
             <a
-              href="https://www.instagram.com/masayuki.kiwami/"
+              href="https://www.instagram.com/gamescope.jp/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-900
@@ -267,7 +267,7 @@ export default function ContactPage() {
               <span>GitHub Issues</span>
             </a>
             <a
-              href="https://www.instagram.com/masayuki.kiwami/"
+              href="https://www.instagram.com/gamescope.jp/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-8 py-4

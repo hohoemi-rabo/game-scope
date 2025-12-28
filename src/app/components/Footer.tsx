@@ -57,7 +57,7 @@ export default function Footer() {
         {/* SNSリンク（全デバイスで表示） */}
         <div className="pb-6 flex items-center justify-center gap-4">
           <a
-            href="https://www.instagram.com/masayuki.kiwami/"
+            href="https://www.instagram.com/gamescope.jp/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-10 h-10 rounded-lg
@@ -76,7 +76,7 @@ export default function Footer() {
             </svg>
           </a>
           <a
-            href="https://x.com/masayuki_kiwami"
+            href="https://x.com/gamescope_jp"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center w-10 h-10 rounded-lg

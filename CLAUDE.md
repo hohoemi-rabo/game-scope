@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Tailwind CSS 3.4.17**
 - **Supabase** (Database, Auth, Edge Functions, Scheduler) - MCP Server統合
 - **SWR** (クライアント側データフェッチング)
-- **Vercel** (デプロイ予定)
+- **Vercel** (デプロイ済み: https://www.gamescope.jp)
 
 ### Phase 2 追加技術
 - **Supabase Auth** - Google OAuth認証
@@ -265,9 +265,9 @@ Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 ### 4. ヘッダー/フッターデザイン
 
 **ヘッダー** (`src/app/components/Header.tsx`):
-- GameScopeロゴ: グラデーション（Game: ブルー→パープル→ピンク、Scope: グリーン→シアン）
+- GameScopeロゴ: `public/logo.png`（Next.js Image使用）
 - ナビゲーション: 🏆 高評価 | 🔍 検索 | 📰 ニュース | 🔄 更新状況
-- SNSリンク（PCのみ表示）: Instagram、X（公式SVGロゴ）
+- SNSリンク（PCのみ表示）: Instagram (@gamescope.jp)、X (@gamescope_jp)
 - デスクトップ: `hidden md:flex` で768px以上で表示
 - モバイル: ハンバーガーメニュー（MobileMenu）に切り替え
 - ログインボタン / ユーザーメニュー（ドロップダウン）実装済み
@@ -276,7 +276,7 @@ Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 - 768px未満でハンバーガーアイコン表示
 - React Portal使用（`createPortal`でbody直下にレンダリング）
   - 理由: ヘッダーの`backdrop-blur-sm`がスタッキングコンテキストを作成するため
-- z-index階層: オーバーレイ z-[100]、メニュー z-[101]、開発中モーダル z-[200]
+- z-index階層: オーバーレイ z-[100]、メニュー z-[101]
 - 背景色: インラインスタイルで確実に適用（`backgroundColor: '#111111'`）
 - 認証処理: Supabase OAuth（LoginButton/UserMenuと同じロジック）
 - SSR対応: `mounted`状態でPortalを条件付きレンダリング
@@ -297,9 +297,10 @@ Client (SWR) - 2軸フィルタリング（サイト名 + キーワード）
 
 **実装場所**: `src/app/status/page.tsx`
 
+- **ステータスサマリー**: ゲーム同期（auto_sync）とニュース同期（news_sync）の両方を表示
 - データソース一覧（OpenCritic, RAWG, Twitch, ニュースRSS）
-- 更新スケジュール（毎日3:00 JST）
-- 最近の更新履歴（operation_logsから取得）
+- 更新スケジュール（ゲーム: 3:00 JST、ニュース: 3:05 JST）
+- 最近の更新履歴（operation_logsから取得、2カラム表示）
 - **動的レンダリング**: `export const dynamic = 'force-dynamic'` で常に最新データ
 
 ## Next.js 15 App Router ベストプラクティス
@@ -661,11 +662,13 @@ DEEPL_API_KEY=          # DeepL API（ゲーム検索の日本語→英語翻訳
 - 上限到達時: 🔒「無料プランの上限に達しました」モーダル表示
 - 実装: `AddGameButton.tsx` の `FREE_TIER_LIMIT` 定数
 
-**本番環境のログイン制限**:
-- localhost: 通常のGoogleログイン可能（開発用）
-- 本番環境: 🚧「現在開発中です」モーダル表示
-- Google Cloud Console設定完了後に本番ログイン有効化予定
-- 実装: `LoginButton.tsx` の `isDevelopment()` 関数
+**本番環境**:
+- URL: https://www.gamescope.jp
+- Google OAuth認証: 本番環境で有効
+- OGP画像: `public/og-image.png`（1200x630px）
+- SNSアカウント:
+  - Instagram: @gamescope.jp
+  - X: @gamescope_jp
 
 ## 参考資料
 

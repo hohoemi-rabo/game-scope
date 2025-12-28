@@ -253,7 +253,7 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <a
-                href="https://www.instagram.com/masayuki.kiwami/"
+                href="https://www.instagram.com/gamescope.jp/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent hover:underline"

@@ -163,7 +163,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
               <p className="text-xs text-text-secondary mb-3">SNS</p>
               <div className="flex items-center gap-3">
                 <a
-                  href="https://www.instagram.com/masayuki.kiwami/"
+                  href="https://www.instagram.com/gamescope.jp/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center w-10 h-10 rounded-lg
@@ -175,7 +175,7 @@ export default function MobileMenu({ user }: MobileMenuProps) {
                   </svg>
                 </a>
                 <a
-                  href="https://x.com/masayuki_kiwami"
+                  href="https://x.com/gamescope_jp"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center w-10 h-10 rounded-lg
