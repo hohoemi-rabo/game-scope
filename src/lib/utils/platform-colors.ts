@@ -21,14 +21,6 @@ const colorMap: Record<string, PlatformColors> = {
     hoverBorder: 'hover:border-accent',
     hex: '#5865f2',
   },
-  '4Gamer': {
-    selected: 'bg-[#5865f2] text-white',
-    default: 'bg-[#5865f2]/20 text-[#5865f2] hover:bg-[#5865f2]/30',
-    badge: 'bg-[#5865f2]/20 text-[#5865f2]',
-    border: 'border-l-[#5865f2]',
-    hoverBorder: 'hover:border-[#5865f2]',
-    hex: '#5865f2',
-  },
   '4Gamer (PC)': {
     selected: 'bg-[#9b59b6] text-white',
     default: 'bg-[#9b59b6]/20 text-[#9b59b6] hover:bg-[#9b59b6]/30',

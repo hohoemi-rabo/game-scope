@@ -17,16 +17,15 @@ const ITEMS_PER_PAGE = 20
 
 const KEYWORDS = ['全て', '発売', '配信', 'リリース', '予定']
 
-// ニュースサイトの表示順
+// ニュースサイトの表示順（4Gamerはカテゴリ別に分離）
 const PLATFORM_ORDER = [
   'All',
-  '4Gamer',
   '4Gamer (PC)',
-  '4Gamer (スマホ)',
   '4Gamer (PlayStation)',
   '4Gamer (Switch)',
-  'PlayStation Blog',
+  '4Gamer (スマホ)',
   'Nintendo',
+  'PlayStation Blog',
   'Game*Spark',
   'GAME Watch',
   'GAMER',
