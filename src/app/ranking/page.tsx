@@ -28,24 +28,26 @@ export default async function RankingPage() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // 初期データ取得（20件）
-    // ranking IS NOT NULL でTop60のみ、rankingでソート
-    const { data: initialGames, error } = await supabase
-      .from('games')
-      .select('*')
-      .not('ranking', 'is', null)
-      .order('ranking', { ascending: true })
-      .limit(20)
+    // 初期データと総件数を並列取得（ウォーターフォール防止）
+    const [gamesResult, countResult] = await Promise.all([
+      supabase
+        .from('games')
+        .select('*')
+        .not('ranking', 'is', null)
+        .order('ranking', { ascending: true })
+        .limit(20),
+      supabase
+        .from('games')
+        .select('*', { count: 'exact', head: true })
+        .not('ranking', 'is', null),
+    ])
 
-    if (error) {
-      throw error
+    if (gamesResult.error) {
+      throw gamesResult.error
     }
 
-    // 総件数取得（Top60のみカウント）
-    const { count } = await supabase
-      .from('games')
-      .select('*', { count: 'exact', head: true })
-      .not('ranking', 'is', null)
+    const initialGames = gamesResult.data
+    const count = countResult.count
 
     const hasMore = count ? 20 < count : false
 

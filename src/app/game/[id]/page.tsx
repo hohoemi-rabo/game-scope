@@ -49,17 +49,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function GameDetailPage({ params }: PageProps) {
   const { id } = await params
 
-  // ゲーム基本情報を取得
-  const game = (await getGame(id).catch(() => null)) as Game | null
+  // ゲーム基本情報とTwitch Game IDを並列取得（ウォーターフォール防止）
+  const [game, twitchGameId] = await Promise.all([
+    getGame(id).catch(() => null) as Promise<Game | null>,
+    getGameTwitchId(id),
+  ])
 
   if (!game) {
     notFound()
   }
 
-  // Twitch Game ID を取得（サーバーサイド、キャッシュ優先）
-  const twitchGameId = await getGameTwitchId(id)
-
-  // ライブ配信の有無を確認
+  // ライブ配信の有無を確認（twitchGameIdに依存するため直列）
   const isLive = twitchGameId ? await hasLiveStreams(twitchGameId) : false
 
   return (

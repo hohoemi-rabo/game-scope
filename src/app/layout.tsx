@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_JP, Geist_Mono } from "next/font/google";
+import dynamic from "next/dynamic";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import ToasterProvider from "./components/ToasterProvider";
-import ScrollToTopButton from "./components/ScrollToTopButton";
+
+// 初期レンダリングに不要なClient Componentを遅延読み込み（バンドルサイズ削減）
+const ToasterProvider = dynamic(() => import("./components/ToasterProvider"));
+const ScrollToTopButton = dynamic(() => import("./components/ScrollToTopButton"));
 
 // 見出し用フォント
 const inter = Inter({

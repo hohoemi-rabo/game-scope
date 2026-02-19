@@ -27,7 +27,7 @@ export async function GET() {
     const { data: newsData, error } = await supabase
       .from('news')
       .select('*')
-      .order('published_at', { ascending: false })
+      .order('published_at', { ascending: false, nullsFirst: false })
       .limit(500) // 最大500件
 
     if (error) {
